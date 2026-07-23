@@ -1,0 +1,25 @@
+2026-07-19 23:22:13.000 +0545 [13272] LOG:  starting PostgreSQL 17.6 on x86_64-windows, compiled by msvc-19.44.35213, 64-bit
+2026-07-19 23:22:13.020 +0545 [13272] LOG:  listening on IPv6 address "::1", port 55432
+2026-07-19 23:22:13.020 +0545 [13272] LOG:  listening on IPv4 address "127.0.0.1", port 55432
+2026-07-19 23:22:13.268 +0545 [5952] LOG:  database system was shut down at 2026-07-19 23:22:11 +0545
+2026-07-19 23:22:13.372 +0545 [13272] LOG:  database system is ready to accept connections
+2026-07-19 23:22:16.514 +0545 [17756] FATAL:  database "cocomama" does not exist
+2026-07-19 23:22:18.270 +0545 [13272] LOG:  received fast shutdown request
+2026-07-19 23:22:18.274 +0545 [13272] LOG:  aborting any active transactions
+2026-07-19 23:22:18.306 +0545 [13272] LOG:  background worker "logical replication launcher" (PID 28808) exited with exit code 1
+2026-07-19 23:22:18.307 +0545 [24628] LOG:  shutting down
+2026-07-19 23:22:18.309 +0545 [24628] LOG:  checkpoint starting: shutdown immediate
+2026-07-19 23:22:18.583 +0545 [24628] LOG:  checkpoint complete: wrote 1014 buffers (6.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.074 s, sync=0.192 s, total=0.277 s; sync files=319, longest=0.003 s, average=0.001 s; distance=4782 kB, estimate=4782 kB; lsn=0/1A1DFA0, redo lsn=0/1A1DFA0
+2026-07-19 23:22:19.165 +0545 [13272] LOG:  database system is shut down
+2026-07-19 23:23:39.588 +0545 [27084] LOG:  starting PostgreSQL 17.6 on x86_64-windows, compiled by msvc-19.44.35213, 64-bit
+2026-07-19 23:23:39.601 +0545 [27084] LOG:  listening on IPv6 address "::1", port 55432
+2026-07-19 23:23:39.601 +0545 [27084] LOG:  listening on IPv4 address "127.0.0.1", port 55432
+2026-07-19 23:23:39.782 +0545 [9008] LOG:  database system was shut down at 2026-07-19 23:22:18 +0545
+2026-07-19 23:23:39.839 +0545 [27084] LOG:  database system is ready to accept connections
+2026-07-19 23:23:42.057 +0545 [27084] LOG:  received fast shutdown request
+2026-07-19 23:23:42.059 +0545 [27084] LOG:  aborting any active transactions
+2026-07-19 23:23:42.072 +0545 [27084] LOG:  background worker "logical replication launcher" (PID 16776) exited with exit code 1
+2026-07-19 23:23:42.075 +0545 [28000] LOG:  shutting down
+2026-07-19 23:23:42.077 +0545 [28000] LOG:  checkpoint starting: shutdown immediate
+2026-07-19 23:23:42.109 +0545 [28000] LOG:  checkpoint complete: wrote 28 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.009 s, sync=0.014 s, total=0.034 s; sync files=22, longest=0.002 s, average=0.001 s; distance=37 kB, estimate=37 kB; lsn=0/1A27608, redo lsn=0/1A27608
+2026-07-19 23:23:42.144 +0545 [27084] LOG:  database system is shut down

@@ -1,0 +1,1000 @@
+import { and, eq, isNull, sql } from "drizzle-orm";
+import { db } from "../db/client.js";
+import { categories, transactions } from "../db/schema.js";
+import type { TransactionType } from "../tools/types.js";
+
+export type DefaultCategorySeed = {
+  kind: TransactionType;
+  name: string;
+  keywords: string[];
+};
+
+const normalizeName = (value: string) =>
+  value.trim().replace(/\s+/g, " ").toLowerCase();
+
+const dedupeKeywords = (keywords: string[]) =>
+  Array.from(
+    new Map(
+      keywords
+        .map((keyword) => keyword.trim())
+        .filter(Boolean)
+        .map((keyword) => [keyword.toLowerCase(), keyword] as const),
+    ).values(),
+  );
+
+export const defaultCategorySeeds: DefaultCategorySeed[] = [
+  {
+    kind: "expense",
+    name: "Housing",
+    keywords: [
+      "Rent",
+      "Mortgage",
+      "Down payment",
+      "HOA fees",
+      "Property tax",
+      "Home insurance",
+      "Apartment rent",
+      "Condo fees",
+      "Repairs",
+      "Plumbing",
+      "Electrician",
+      "Carpenter",
+      "Roofing",
+      "Painting",
+      "Pest control",
+      "Home security",
+      "Furniture assembly",
+      "Moving expenses",
+      "Storage unit",
+      "Cleaning service",
+      "Appliances",
+      "Water heater",
+      "Air conditioner",
+      "Generator",
+    ],
+  },
+  {
+    kind: "expense",
+    name: "Utilities",
+    keywords: [
+      "Electricity",
+      "Water bill",
+      "Sewer",
+      "Natural gas",
+      "LPG",
+      "Internet",
+      "Wi-Fi",
+      "Cable TV",
+      "Mobile phone bill",
+      "Landline",
+      "Trash collection",
+      "Recycling",
+      "Heating",
+      "Cooling",
+      "Utility deposits",
+    ],
+  },
+  {
+    kind: "expense",
+    name: "Food & Dining",
+    keywords: [
+      "Groceries",
+      "Supermarket",
+      "Restaurant",
+      "Cafe",
+      "Coffee",
+      "Bakery",
+      "Fast food",
+      "Pizza",
+      "Sushi",
+      "Buffet",
+      "Lunch",
+      "Dinner",
+      "Breakfast",
+      "Takeout",
+      "Food delivery",
+      "Snacks",
+      "Ice cream",
+      "Beverages",
+      "Alcohol",
+      "Meal subscription",
+      "Farmers market",
+    ],
+  },
+  {
+    kind: "expense",
+    name: "Transportation",
+    keywords: [
+      "Fuel",
+      "Gasoline",
+      "Diesel",
+      "EV charging",
+      "Parking",
+      "Toll",
+      "Bus",
+      "Train",
+      "Metro",
+      "Subway",
+      "Taxi",
+      "Uber",
+      "Lyft",
+      "Grab",
+      "Ola",
+      "Car payment",
+      "Vehicle insurance",
+      "Oil change",
+      "Tire replacement",
+      "Car wash",
+      "Vehicle registration",
+      "Driver's license renewal",
+      "Motorcycle expenses",
+      "Bicycle repair",
+    ],
+  },
+  {
+    kind: "expense",
+    name: "Healthcare",
+    keywords: [
+      "Doctor",
+      "Hospital",
+      "Clinic",
+      "Dentist",
+      "Orthodontist",
+      "Eye exam",
+      "Glasses",
+      "Contact lenses",
+      "Pharmacy",
+      "Prescription medicine",
+      "Vitamins",
+      "Therapy",
+      "Counseling",
+      "Physiotherapy",
+      "Surgery",
+      "Lab tests",
+      "Health insurance",
+      "Vaccination",
+      "Medical equipment",
+    ],
+  },
+  {
+    kind: "expense",
+    name: "Shopping",
+    keywords: [
+      "Clothing",
+      "Shoes",
+      "Bags",
+      "Jewelry",
+      "Electronics",
+      "Laptop",
+      "Phone",
+      "Tablet",
+      "Accessories",
+      "Furniture",
+      "Home decor",
+      "Kitchenware",
+      "Office supplies",
+      "Books",
+      "Toys",
+      "Gifts",
+      "Amazon",
+      "Walmart",
+      "Target",
+      "IKEA",
+      "eBay",
+    ],
+  },
+  {
+    kind: "expense",
+    name: "Entertainment",
+    keywords: [
+      "Netflix",
+      "Disney+",
+      "Hulu",
+      "Spotify",
+      "Apple Music",
+      "YouTube Premium",
+      "Movies",
+      "Cinema",
+      "Concerts",
+      "Sports events",
+      "Theme parks",
+      "Video games",
+      "Steam",
+      "PlayStation Store",
+      "Xbox",
+      "Nintendo",
+      "Hobbies",
+      "Photography",
+      "Musical instruments",
+    ],
+  },
+  {
+    kind: "expense",
+    name: "Travel",
+    keywords: [
+      "Flights",
+      "Hotels",
+      "Airbnb",
+      "Hostels",
+      "Resorts",
+      "Vacation packages",
+      "Train tickets",
+      "Cruise",
+      "Car rental",
+      "Visa fees",
+      "Passport renewal",
+      "Travel insurance",
+      "Tour guides",
+      "Souvenirs",
+      "Luggage",
+      "Currency exchange",
+    ],
+  },
+  {
+    kind: "expense",
+    name: "Education",
+    keywords: [
+      "Tuition",
+      "School fees",
+      "University fees",
+      "Online courses",
+      "Udemy",
+      "Coursera",
+      "Pluralsight",
+      "Books",
+      "Notebooks",
+      "School supplies",
+      "Exam fees",
+      "Certification",
+      "Workshops",
+      "Conferences",
+      "Training programs",
+    ],
+  },
+  {
+    kind: "expense",
+    name: "Financial",
+    keywords: [
+      "Bank fees",
+      "ATM fees",
+      "Credit card payment",
+      "Loan payment",
+      "Personal loan",
+      "Mortgage payment",
+      "Interest",
+      "Investment fees",
+      "Brokerage fees",
+      "Wire transfer",
+      "Taxes",
+      "Accountant",
+      "Financial advisor",
+      "Currency exchange fees",
+    ],
+  },
+  {
+    kind: "expense",
+    name: "Personal Care",
+    keywords: [
+      "Haircut",
+      "Salon",
+      "Barber",
+      "Cosmetics",
+      "Makeup",
+      "Skincare",
+      "Perfume",
+      "Spa",
+      "Massage",
+      "Gym membership",
+      "Yoga",
+      "Fitness classes",
+      "Hygiene products",
+      "Nail salon",
+    ],
+  },
+  {
+    kind: "expense",
+    name: "Family & Pets",
+    keywords: [
+      "Childcare",
+      "Daycare",
+      "Babysitter",
+      "School lunch",
+      "Baby food",
+      "Diapers",
+      "Toys",
+      "Allowance",
+      "Pet food",
+      "Veterinary",
+      "Grooming",
+      "Pet insurance",
+      "Pet toys",
+      "Adoption fees",
+    ],
+  },
+  {
+    kind: "expense",
+    name: "Insurance",
+    keywords: [
+      "Health insurance",
+      "Auto insurance",
+      "Home insurance",
+      "Renters insurance",
+      "Life insurance",
+      "Disability insurance",
+      "Travel insurance",
+      "Pet insurance",
+      "Umbrella insurance",
+    ],
+  },
+  {
+    kind: "expense",
+    name: "Business & Work",
+    keywords: ["Office supplies", "Printer ink", "Software subscription"],
+  },
+  {
+    kind: "income",
+    name: "Salary & Employment",
+    keywords: [
+      "Salary",
+      "Wages",
+      "Hourly Pay",
+      "Overtime Pay",
+      "Bonus",
+      "Commission",
+      "Tips",
+      "Gratuities",
+      "Shift Differential",
+      "Holiday Pay",
+      "Performance Bonus",
+      "Profit Sharing",
+      "RSUs",
+      "ESPP Proceeds",
+      "Severance Pay",
+      "Retention Bonus",
+      "Payroll Deposit",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Freelance & Contract Work",
+    keywords: [
+      "Freelance Income",
+      "Consulting",
+      "Contract Work",
+      "Professional Services",
+      "Client Payment",
+      "Project Payment",
+      "Retainer Fee",
+      "Invoice Payment",
+      "Self-Employment Income",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Business Income",
+    keywords: [
+      "Business Revenue",
+      "Sales Revenue",
+      "Service Revenue",
+      "Product Sales",
+      "Subscription Revenue",
+      "Membership Fees",
+      "Franchise Income",
+      "Licensing Revenue",
+      "Business Profit",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Gig Economy",
+    keywords: [
+      "Uber Driver",
+      "Lyft Driver",
+      "DoorDash",
+      "Uber Eats",
+      "Grubhub",
+      "Instacart",
+      "Amazon Flex",
+      "Fiverr",
+      "Upwork",
+      "TaskRabbit",
+      "Deliveroo",
+      "Bolt Driver",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Online Sales",
+    keywords: [
+      "Amazon Seller",
+      "Etsy Sales",
+      "Shopify Sales",
+      "eBay Sales",
+      "Facebook Marketplace",
+      "Mercari",
+      "Poshmark",
+      "Gumroad",
+      "Digital Downloads",
+      "Online Store Sales",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Rental Income",
+    keywords: [
+      "House Rent",
+      "Apartment Rent",
+      "Airbnb Income",
+      "Vacation Rental",
+      "Office Rental",
+      "Commercial Property",
+      "Storage Rental",
+      "Parking Space Rental",
+      "Equipment Rental",
+      "Vehicle Rental",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Investment Income",
+    keywords: [
+      "Dividends",
+      "Interest Income",
+      "Savings Interest",
+      "Bond Interest",
+      "CD Interest",
+      "Capital Gains",
+      "Stock Sale",
+      "ETF Sale",
+      "Mutual Fund Sale",
+      "REIT Distribution",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Cryptocurrency",
+    keywords: [
+      "Crypto Trading Profit",
+      "Mining Rewards",
+      "Staking Rewards",
+      "Airdrops",
+      "NFT Sales",
+      "Yield Farming",
+      "Liquidity Rewards",
+      "Crypto Cashback",
+      "Token Rewards",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Royalties & Licensing",
+    keywords: [
+      "Book Royalties",
+      "Music Royalties",
+      "Patent Royalties",
+      "Trademark Royalties",
+      "Software Licensing",
+      "Content Licensing",
+      "Intellectual Property Income",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Content Creator Income",
+    keywords: [
+      "YouTube Revenue",
+      "Google AdSense",
+      "Twitch Revenue",
+      "TikTok Creator Fund",
+      "Patreon",
+      "Sponsorships",
+      "Affiliate Marketing",
+      "Podcast Revenue",
+      "Blog Revenue",
+      "Newsletter Revenue",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Bank Rewards & Cashback",
+    keywords: [
+      "Cashback Rewards",
+      "Credit Card Cashback",
+      "Bank Bonus",
+      "Sign-up Bonus",
+      "Referral Bonus",
+      "Loyalty Rewards",
+      "Reward Points Redemption",
+      "Promotional Credit",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Refunds & Reimbursements",
+    keywords: [
+      "Tax Refund",
+      "Employer Reimbursement",
+      "Medical Reimbursement",
+      "Expense Reimbursement",
+      "Insurance Reimbursement",
+      "Product Refund",
+      "Deposit Refund",
+      "Utility Refund",
+      "Rent Refund",
+      "Overpayment Refund",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Government Benefits",
+    keywords: [
+      "Social Security",
+      "Pension",
+      "Retirement Benefits",
+      "Disability Benefits",
+      "Unemployment Benefits",
+      "Veterans Benefits",
+      "Child Benefits",
+      "Housing Assistance",
+      "Food Assistance",
+      "Welfare Benefits",
+      "Stimulus Payment",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Insurance Payouts",
+    keywords: [
+      "Health Insurance Claim",
+      "Auto Insurance Claim",
+      "Home Insurance Claim",
+      "Life Insurance Benefit",
+      "Travel Insurance Claim",
+      "Property Insurance Claim",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Education & Grants",
+    keywords: [
+      "Scholarship",
+      "Fellowship",
+      "Research Grant",
+      "Student Grant",
+      "Tuition Reimbursement",
+      "Financial Aid",
+      "Educational Stipend",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Gifts & Family Support",
+    keywords: [
+      "Cash Gift",
+      "Birthday Gift",
+      "Wedding Gift",
+      "Holiday Gift",
+      "Family Support",
+      "Allowance",
+      "Inheritance",
+      "Trust Distribution",
+      "Donation Received",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Transfers Received",
+    keywords: [
+      "Bank Transfer",
+      "Wire Transfer",
+      "ACH Credit",
+      "Zelle",
+      "Venmo",
+      "PayPal Transfer",
+      "Cash App",
+      "Wise Transfer",
+      "Remittance",
+      "Peer-to-Peer Transfer",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Agriculture & Farming",
+    keywords: [
+      "Crop Sales",
+      "Livestock Sales",
+      "Dairy Sales",
+      "Farm Produce",
+      "Agricultural Grant",
+      "Farm Subsidy",
+      "Timber Sales",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Prizes & Winnings",
+    keywords: [
+      "Lottery Winnings",
+      "Casino Winnings",
+      "Poker Winnings",
+      "Sports Betting",
+      "Competition Prize",
+      "Contest Prize",
+      "Raffle Prize",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Asset Sales",
+    keywords: [
+      "Vehicle Sale",
+      "Property Sale",
+      "Furniture Sale",
+      "Electronics Sale",
+      "Collectibles Sale",
+      "Gold Sale",
+      "Jewelry Sale",
+      "Equipment Sale",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Legal & Settlements",
+    keywords: [
+      "Court Settlement",
+      "Legal Compensation",
+      "Lawsuit Settlement",
+      "Arbitration Award",
+      "Compensation Payment",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Foreign Income",
+    keywords: [
+      "Overseas Salary",
+      "Foreign Pension",
+      "International Client Payment",
+      "Overseas Rental Income",
+      "Foreign Investment Income",
+    ],
+  },
+  {
+    kind: "income",
+    name: "Miscellaneous Income",
+    keywords: [
+      "Cash Deposit",
+      "Check Deposit",
+      "Miscellaneous Income",
+      "Other Income",
+      "Found Money",
+      "Unknown Deposit",
+      "Uncategorized Income",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Emergency Fund",
+    keywords: [
+      "Emergency savings",
+      "Rainy day fund",
+      "Unexpected expenses",
+      "Financial cushion",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "General Savings",
+    keywords: [
+      "Savings account",
+      "Cash savings",
+      "Personal savings",
+      "General reserve",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Retirement Savings",
+    keywords: [
+      "401(k)",
+      "IRA",
+      "Roth IRA",
+      "Pension contributions",
+      "Retirement fund",
+      "Superannuation",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Investment Savings",
+    keywords: [
+      "Brokerage account",
+      "Stocks",
+      "ETFs",
+      "Mutual funds",
+      "Index funds",
+      "Bonds",
+      "REITs",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Education Savings",
+    keywords: [
+      "College fund",
+      "Tuition savings",
+      "529 Plan",
+      "School fund",
+      "Education trust",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Home Savings",
+    keywords: [
+      "Down payment",
+      "Home purchase fund",
+      "House renovation fund",
+      "Home improvement savings",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Vehicle Savings",
+    keywords: [
+      "Car purchase fund",
+      "Motorcycle fund",
+      "Vehicle replacement fund",
+      "EV fund",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Travel Savings",
+    keywords: [
+      "Vacation fund",
+      "Holiday fund",
+      "Honeymoon fund",
+      "Flight savings",
+      "Hotel savings",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Healthcare Savings",
+    keywords: [
+      "Medical fund",
+      "Health Savings Account (HSA)",
+      "Medical emergency fund",
+      "Dental fund",
+      "Vision fund",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Wedding Savings",
+    keywords: [
+      "Wedding fund",
+      "Engagement savings",
+      "Ceremony fund",
+      "Reception fund",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Baby & Family Savings",
+    keywords: [
+      "Baby fund",
+      "Child education fund",
+      "Family emergency fund",
+      "Adoption fund",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Business Savings",
+    keywords: [
+      "Business reserve",
+      "Startup fund",
+      "Equipment fund",
+      "Expansion fund",
+      "Working capital",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Technology Savings",
+    keywords: [
+      "Laptop fund",
+      "Phone upgrade",
+      "Gaming PC fund",
+      "Electronics savings",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Gift Savings",
+    keywords: [
+      "Christmas fund",
+      "Birthday fund",
+      "Anniversary fund",
+      "Holiday gifts",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Tax Savings",
+    keywords: [
+      "Tax reserve",
+      "Quarterly tax savings",
+      "Income tax fund",
+      "Property tax savings",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Insurance Reserve",
+    keywords: [
+      "Insurance deductible fund",
+      "Premium reserve",
+      "Claims reserve",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Debt Payoff Fund",
+    keywords: [
+      "Loan payoff savings",
+      "Mortgage payoff",
+      "Credit card payoff",
+      "Student loan payoff",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Large Purchase Fund",
+    keywords: [
+      "Furniture fund",
+      "Appliance fund",
+      "Luxury purchase",
+      "Major purchase savings",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Pet Savings",
+    keywords: ["Veterinary fund", "Pet emergency fund", "Pet adoption savings"],
+  },
+  {
+    kind: "savings",
+    name: "Charity Savings",
+    keywords: ["Donation fund", "Tithing", "Community support fund"],
+  },
+  {
+    kind: "savings",
+    name: "Crypto Savings",
+    keywords: [
+      "Bitcoin savings",
+      "Ethereum savings",
+      "Stablecoin reserve",
+      "Long-term crypto holding",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Gold & Precious Metals",
+    keywords: [
+      "Gold savings",
+      "Silver savings",
+      "Bullion purchases",
+      "Precious metals reserve",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Foreign Currency Savings",
+    keywords: [
+      "USD reserve",
+      "EUR savings",
+      "Foreign exchange fund",
+      "Travel currency savings",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Children's Future",
+    keywords: [
+      "College fund",
+      "Trust fund",
+      "Custodial account",
+      "Future education savings",
+    ],
+  },
+  {
+    kind: "savings",
+    name: "Other Goal-Based Savings",
+    keywords: [
+      "New business fund",
+      "Dream project fund",
+      "Sabbatical fund",
+      "Early retirement (FIRE)",
+      "Miscellaneous savings",
+    ],
+  },
+];
+
+const mergeKeywords = (currentKeywords: string[], seedKeywords: string[]) =>
+  dedupeKeywords([...currentKeywords, ...seedKeywords]);
+
+const removeDuplicateGlobalCategories = async () => {
+  const duplicateRows = await db.execute<{
+    id: string;
+    keeper_id: string;
+  }>(sql`
+    WITH ranked_categories AS (
+      SELECT
+        id,
+        FIRST_VALUE(id) OVER (
+          PARTITION BY lower(name)
+          ORDER BY created_at ASC, id ASC
+        ) AS keeper_id,
+        ROW_NUMBER() OVER (
+          PARTITION BY lower(name)
+          ORDER BY created_at ASC, id ASC
+        ) AS duplicate_rank
+      FROM categories
+      WHERE user_id IS NULL
+    )
+    SELECT id, keeper_id
+    FROM ranked_categories
+    WHERE duplicate_rank > 1
+  `);
+
+  for (const duplicate of duplicateRows.rows) {
+    await db
+      .update(transactions)
+      .set({ categoryId: duplicate.keeper_id })
+      .where(eq(transactions.categoryId, duplicate.id));
+  }
+
+  for (const duplicate of duplicateRows.rows) {
+    await db.delete(categories).where(eq(categories.id, duplicate.id));
+  }
+};
+
+export const seedDefaultCategories = async () => {
+  await removeDuplicateGlobalCategories();
+
+  for (const seed of defaultCategorySeeds) {
+    const name = normalizeName(seed.name);
+    const keywords = dedupeKeywords(seed.keywords);
+    const [existingCategory] = await db
+      .select()
+      .from(categories)
+      .where(
+        and(
+          isNull(categories.userId),
+          sql`lower(${categories.name}) = ${name}`,
+        ),
+      )
+      .limit(1);
+
+    if (existingCategory) {
+      await db
+        .update(categories)
+        .set({
+          name: seed.name,
+          keywords: mergeKeywords(existingCategory.keywords, keywords),
+        })
+        .where(eq(categories.id, existingCategory.id));
+      continue;
+    }
+
+    await db.insert(categories).values({
+      userId: null,
+      kind: seed.kind,
+      name: seed.name,
+      keywords,
+    });
+  }
+};
