@@ -1,6 +1,6 @@
 # Cocomama Voice Gateway
 
-Local open-source speech service for the authenticated Node backend voice routes.
+Root-level voice microservice for the authenticated Node backend voice routes.
 
 ## Stack
 
@@ -19,6 +19,16 @@ uvicorn voice_gateway.main:app --host 0.0.0.0 --port 8010
 
 Run Kokoro separately, for example with the Kokoro-FastAPI container on port `8880`, then set `VOICE_GATEWAY_BASE_URL=http://localhost:8010` in the Node backend environment.
 
+## Docker
+
+From the workspace root, the service is built by `docker-compose.yaml` as `voice`:
+
+```powershell
+docker compose up --build voice
+```
+
+The compose stack mounts `./voice.cocomama/models` to `/app/models` so offline faster-whisper model folders can be reused without baking them into the image.
+
 ## Offline STT Model
 
 If Hugging Face downloads are blocked on your current network, download the faster-whisper CTranslate2 model outside that network and point `VOICE_STT_MODEL` at the local directory.
@@ -26,7 +36,7 @@ If Hugging Face downloads are blocked on your current network, download the fast
 Example for the small local-development model:
 
 ```powershell
-cd server.cocomama/voice-gateway
+cd voice.cocomama
 .\.venv\Scripts\huggingface-cli.exe download Systran/faster-whisper-tiny.en --local-dir models/faster-whisper-tiny.en
 $env:VOICE_STT_MODEL = "models/faster-whisper-tiny.en"
 .\.venv\Scripts\python.exe -m uvicorn --app-dir . voice_gateway.main:app --host 0.0.0.0 --port 8010

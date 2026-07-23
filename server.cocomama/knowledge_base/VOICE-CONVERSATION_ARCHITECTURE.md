@@ -129,7 +129,7 @@ Development:
 ```powershell
 # Terminal 1: Kokoro-FastAPI on http://localhost:8880
 # Terminal 2: Voice gateway
-cd server.cocomama/voice-gateway
+cd voice.cocomama
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
@@ -146,4 +146,5 @@ Production:
 
 - CPU-only small deployment: `VOICE_STT_MODEL=distil-large-v3`, `VOICE_STT_DEVICE=cpu`, `VOICE_STT_COMPUTE_TYPE=int8`.
 - NVIDIA deployment: `VOICE_STT_DEVICE=cuda`, `VOICE_STT_COMPUTE_TYPE=float16`, run Kokoro GPU image.
+- Docker Compose deployment: use the root `docker-compose.yaml`; it runs `client`, `backend`, `voice`, and `postgres`, with backend migrations executed before the backend server starts.
 - Add ingress limits for `/api/voice/transcribe`, per-user quotas, and observability around transcription duration, TTS duration, gateway errors, and interruption rate.
