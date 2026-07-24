@@ -34,6 +34,7 @@ const otpExpiryDurationSeconds = Number.isFinite(configuredOtpExpirySeconds)
   ? Math.max(60, configuredOtpExpirySeconds)
   : 300;
 const resendCooldownSeconds = 30;
+const appHomePath = "/home";
 
 function formatCountdown(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -98,11 +99,15 @@ function getFriendlyAuthError(error: unknown, fallback: string) {
 function getRedirectPath() {
   const nextPath = new URLSearchParams(window.location.search).get("next");
 
-  if (nextPath?.startsWith("/") && !nextPath.startsWith("//")) {
+  if (
+    nextPath?.startsWith("/") &&
+    !nextPath.startsWith("//") &&
+    nextPath !== "/"
+  ) {
     return nextPath;
   }
 
-  return "/";
+  return appHomePath;
 }
 
 function getRedirectUrl() {
@@ -113,7 +118,7 @@ function getOnboardingRedirectUrl() {
   const nextPath = getRedirectPath();
   const onboardingUrl = new URL("/onboarding", window.location.origin);
 
-  if (nextPath !== "/") {
+  if (nextPath !== appHomePath) {
     onboardingUrl.searchParams.set("next", nextPath);
   }
 
@@ -490,7 +495,7 @@ export default function LoginPage() {
               </span>
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-border bg-surface p-5 shadow-[0_16px_50px_rgba(15,23,42,0.07)] sm:p-6">
+            <div className="overflow-hidden rounded-xl border border-border bg-surface p-5 shadow-[0_10px_28px_rgba(15,23,42,0.045)] sm:p-6">
               <div className="mb-5">
                 <div className="mb-4 grid size-10 place-items-center rounded-lg bg-text text-surface">
                   <ShieldCheck

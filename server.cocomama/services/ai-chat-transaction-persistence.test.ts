@@ -313,6 +313,121 @@ describe("AI chat transaction persistence", () => {
     });
   });
 
+  it("prefers specific inferred categories over broad shopping and creates them", async () => {
+    const userId = randomUUID();
+    const { createChatOrchestrator } =
+      await import("../src/services/chat-orchestrator.js");
+    const { db, categories, transactions, users } = await loadDatabase();
+    const payloads = [
+      {
+        message: "I bought a shirt for Rs 900",
+        title: "Shirt",
+        expectedCategory: "Clothing",
+        arguments: {
+          type: "expense",
+          amount: 900,
+          category: "shopping",
+          title: "Shirt",
+          description: "Shirt",
+          occurred_at: "2026-07-22T00:00:00.000Z",
+        },
+      },
+      {
+        message: "I bought plants for Rs 450",
+        title: "Plants",
+        expectedCategory: "Plants",
+        arguments: {
+          type: "expense",
+          amount: 450,
+          category: "shopping",
+          title: "Plants",
+          description: "Plants",
+          occurred_at: "2026-07-22T00:00:00.000Z",
+        },
+      },
+    ];
+    let payloadIndex = 0;
+    const gateway: ChatGateway = {
+      async createChatCompletion() {
+        const payload = payloads[payloadIndex];
+
+        if (!payload) {
+          throw new Error("Unexpected chat completion call");
+        }
+
+        payloadIndex += 1;
+
+        return {
+          model: "fake-model",
+          content: JSON.stringify({
+            tool: "create_transaction",
+            arguments: payload.arguments,
+          }),
+        };
+      },
+    };
+    const orchestrator = createChatOrchestrator({
+      gateway,
+      now: () => new Date("2026-07-22T00:00:00.000Z"),
+    });
+
+    await db.insert(users).values({
+      id: userId,
+      email: `${userId}@example.test`,
+      name: "AI Chat Specific Category Test",
+      currency: "NPR",
+      timezone: "Asia/Kathmandu",
+      onboardingCompleted: true,
+    });
+    createdUserIds.push(userId);
+    await db.insert(categories).values({
+      userId,
+      kind: "expense",
+      name: "Shopping",
+      emoji: "🛍️",
+      keywords: ["shopping"],
+    });
+
+    for (const payload of payloads) {
+      const response = await orchestrator.handleChat({
+        userId,
+        user: {
+          id: userId,
+          email: `${userId}@example.test`,
+          name: "AI Chat Specific Category Test",
+          currency: "NPR",
+          timezone: "Asia/Kathmandu",
+        },
+        message: payload.message,
+      });
+
+      expect(response.ok).toBe(true);
+      expect(response.data?.toolCalls?.[0]?.result).toMatchObject({
+        category: payload.expectedCategory,
+      });
+
+      const [savedTransaction] = await db
+        .select({
+          categoryName: categories.name,
+          categoryUserId: categories.userId,
+        })
+        .from(transactions)
+        .innerJoin(categories, eq(transactions.categoryId, categories.id))
+        .where(
+          and(
+            eq(transactions.userId, userId),
+            eq(transactions.title, payload.title),
+          ),
+        )
+        .limit(1);
+
+      expect(savedTransaction).toEqual({
+        categoryName: payload.expectedCategory,
+        categoryUserId: userId,
+      });
+    }
+  });
+
   it("maps AI keyword categories to seeded categories for expenses, income, and savings", async () => {
     const userId = randomUUID();
     const { createChatOrchestrator } =

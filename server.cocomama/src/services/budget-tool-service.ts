@@ -1,6 +1,6 @@
 import { and, eq, ilike, isNull, sql } from "drizzle-orm";
 import { db } from "../db/client.js";
-import { budgetAllocations, budgets } from "../db/schema.js";
+import { budgetAllocations, budgets, categories } from "../db/schema.js";
 import type {
   AllocateToBudgetInput,
   CreateBudgetInput,
@@ -11,6 +11,7 @@ import type {
 } from "../tools/types.js";
 import type { ChatToolCallSummary } from "./transaction-record-service.js";
 import { getInitialBudgetNotificationDate } from "./budget-notification-service.js";
+import { resolveBudgetCategory } from "./budget-category-service.js";
 
 export interface BudgetUserContext {
   id: string;
@@ -152,6 +153,20 @@ export const createBudget = async ({
   now?: Date;
 }) => {
   const name = normalizeBudgetName(input.name);
+  const category = await resolveBudgetCategory({
+    userId: user.id,
+    categoryName: input.category,
+    budgetName: name,
+  });
+
+  if (!category) {
+    return {
+      response:
+        "### Budget category needed\n\nI could not create this budget because I could not match it to any saved category.",
+      toolCalls: [],
+    };
+  }
+
   const [existingBudget] = await db
     .select()
     .from(budgets)
@@ -182,6 +197,7 @@ export const createBudget = async ({
     .insert(budgets)
     .values({
       userId: user.id,
+      categoryId: category.id,
       name,
       ...(input.target_amount
         ? { targetAmount: input.target_amount.toFixed(2) }
@@ -207,6 +223,7 @@ export const createBudget = async ({
     "### Budget created",
     "",
     `**Budget:** ${budget.name}`,
+    `**Category:** ${category.name}`,
     budget.targetAmount
       ? `**Target:** ${formatMoney(Number(budget.targetAmount), currency)}`
       : null,
@@ -237,9 +254,11 @@ export const createBudget = async ({
 export const allocateToBudget = async ({
   user,
   input,
+  now = new Date(),
 }: {
   user: BudgetUserContext;
   input: AllocateToBudgetInput;
+  now?: Date;
 }) => {
   const budget = await findBudget({
     userId: user.id,
@@ -259,7 +278,7 @@ export const allocateToBudget = async ({
       budgetId: budget.id,
       userId: user.id,
       amount: input.amount.toFixed(2),
-      occurredAt: new Date(input.occurred_at),
+      occurredAt: input.occurred_at ? new Date(input.occurred_at) : now,
       ...(input.note ? { note: input.note } : {}),
       ...(input.source_transaction_id
         ? { sourceTransactionId: input.source_transaction_id }
@@ -350,8 +369,15 @@ export const queryBudgets = async ({
   }
 
   const rows = await db
-    .select()
+    .select({
+      budget: budgets,
+      category: {
+        name: categories.name,
+        emoji: categories.emoji,
+      },
+    })
     .from(budgets)
+    .leftJoin(categories, eq(budgets.categoryId, categories.id))
     .where(and(...conditions))
     .orderBy(budgets.status, budgets.name)
     .limit(100);
@@ -374,21 +400,25 @@ export const queryBudgets = async ({
   if (input.aggregate !== "list") {
     const total = rows.reduce((sum, row) => {
       if (input.aggregate === "current_amount") {
-        return sum + Number(row.currentAmount);
+        return sum + Number(row.budget.currentAmount);
       }
 
       if (input.aggregate === "allocations_sum") {
-        return sum + Number(row.currentAmount);
+        return sum + Number(row.budget.currentAmount);
       }
 
       if (input.aggregate === "target_amount") {
-        return sum + Number(row.targetAmount ?? 0);
+        return sum + Number(row.budget.targetAmount ?? 0);
       }
 
       if (input.aggregate === "remaining") {
         return (
           sum +
-          Math.max(Number(row.targetAmount ?? 0) - Number(row.currentAmount), 0)
+          Math.max(
+            Number(row.budget.targetAmount ?? 0) -
+              Number(row.budget.currentAmount),
+            0,
+          )
         );
       }
 
@@ -414,19 +444,25 @@ export const queryBudgets = async ({
     rows.length
       ? rows
           .map((row) => {
-            const target = row.targetAmount
-              ? formatMoney(Number(row.targetAmount), currency)
+            const target = row.budget.targetAmount
+              ? formatMoney(Number(row.budget.targetAmount), currency)
               : "no target";
-            const saved = formatMoney(Number(row.currentAmount), currency);
-            const reminder = row.notificationEnabled
-              ? `, reminder ${row.notificationCadence}${
-                  row.notificationDayOfMonth
-                    ? ` on day ${row.notificationDayOfMonth}`
+            const saved = formatMoney(
+              Number(row.budget.currentAmount),
+              currency,
+            );
+            const reminder = row.budget.notificationEnabled
+              ? `, reminder ${row.budget.notificationCadence}${
+                  row.budget.notificationDayOfMonth
+                    ? ` on day ${row.budget.notificationDayOfMonth}`
                     : ""
                 }`
               : "";
+            const category = row.category?.name
+              ? `, ${row.category.emoji} ${row.category.name}`
+              : "";
 
-            return `- **${row.name}:** ${saved} saved of ${target} (${row.status}${reminder})`;
+            return `- **${row.budget.name}:** ${saved} saved of ${target} (${row.budget.status}${category}${reminder})`;
           })
           .join("\n")
       : "No matching budgets found.",

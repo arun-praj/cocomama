@@ -57,7 +57,9 @@ function WelcomeContent() {
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next");
   const homePath =
-    nextPath?.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/";
+    nextPath?.startsWith("/") && !nextPath.startsWith("//")
+      ? nextPath
+      : "/home";
 
   return (
     <main className="min-h-dvh bg-background text-text">

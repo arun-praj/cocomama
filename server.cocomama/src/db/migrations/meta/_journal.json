@@ -57,6 +57,20 @@
       "when": 1784722620000,
       "tag": "0007_unique_category_names",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784796581158,
+      "tag": "0008_sparkling_azazel",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784880000000,
+      "tag": "0009_budget_categories",
+      "breakpoints": true
     }
   ]
 }

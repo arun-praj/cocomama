@@ -11,7 +11,8 @@
     "test": "vitest run",
     "smoke:real-user": "tsx scripts/smoke-real-user.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed:categories": "tsx scripts/seed-default-categories.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.23",

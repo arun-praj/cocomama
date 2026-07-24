@@ -64,6 +64,11 @@ import {
 } from "./transaction-query-service.js";
 import { queryUser, type UserQueryContext } from "./user-query-service.js";
 import {
+  dateOnlyPattern,
+  formatDateOnlyInTimeZone,
+  resolveDateOnlyWithCurrentTime,
+} from "./time-zone-date-service.js";
+import {
   createLlmGateway,
   LlmGatewayError,
   type LlmChatCompletionRequest,
@@ -149,6 +154,7 @@ export interface BudgetToolExecutor {
   allocateToBudget(request: {
     user: ChatUserContext;
     input: AllocateToBudgetInput;
+    now?: Date;
   }): Promise<{ response: string; toolCalls: ChatToolCallSummary[] }>;
   queryBudgets(request: {
     user: ChatUserContext;
@@ -1206,10 +1212,14 @@ const normalizeCreateTransactionInput = ({
   input,
   userMessage,
   userCurrency,
+  userTimezone,
+  now,
 }: {
   input: Record<string, unknown>;
   userMessage: string;
   userCurrency: string;
+  userTimezone: string;
+  now: Date;
 }) => {
   const normalizedInput = { ...input };
 
@@ -1259,6 +1269,17 @@ const normalizeCreateTransactionInput = ({
   }
 
   delete normalizedInput.source_currency;
+
+  if (
+    typeof normalizedInput.occurred_at === "string" &&
+    dateOnlyPattern.test(normalizedInput.occurred_at)
+  ) {
+    normalizedInput.occurred_at = resolveDateOnlyWithCurrentTime({
+      value: normalizedInput.occurred_at,
+      now,
+      timeZone: userTimezone,
+    }).toISOString();
+  }
 
   return normalizedInput;
 };
@@ -1559,6 +1580,20 @@ const normalizeCreateBudgetInput = ({
     }
   }
 
+  for (const [sourceKey, targetKey] of [
+    ["category_name", "category"],
+    ["budget_category", "category"],
+  ] as const) {
+    if (
+      normalizedInput[targetKey] === undefined &&
+      normalizedInput[sourceKey] !== undefined
+    ) {
+      normalizedInput[targetKey] = normalizedInput[sourceKey];
+    }
+
+    delete normalizedInput[sourceKey];
+  }
+
   if (normalizedInput.target_amount === undefined) {
     const targetAmount =
       toNumber(normalizedInput.target) ??
@@ -1687,6 +1722,8 @@ const executeToolPayload = async ({
   budgetTools,
   queryTransactionsTool,
   queryUserTool,
+  now,
+  userTimezone,
 }: {
   payload: ToolPayload;
   request: ChatRequest;
@@ -1698,6 +1735,8 @@ const executeToolPayload = async ({
   budgetTools: BudgetToolExecutor;
   queryTransactionsTool: QueryTransactionsExecutor;
   queryUserTool: QueryUserExecutor;
+  now: Date;
+  userTimezone: string;
 }): Promise<ToolExecutionResult> => {
   if (payload.tool === "create_transaction") {
     const parsedInput = createTransactionInputSchema.safeParse(
@@ -1705,6 +1744,8 @@ const executeToolPayload = async ({
         input: payload.input,
         userMessage: request.message,
         userCurrency: request.user?.currency ?? "NPR",
+        userTimezone,
+        now,
       }),
     );
 
@@ -1934,6 +1975,7 @@ const executeToolPayload = async ({
       ...(await budgetTools.allocateToBudget({
         user: request.user ?? { id: request.userId },
         input: parsedInput.data,
+        now: new Date(),
       })),
     };
   }
@@ -2224,7 +2266,9 @@ export const createChatOrchestrator = ({
   maxHistoryMessages = 16,
 }: ChatOrchestratorOptions = {}) => ({
   async handleChat(request: ChatRequest): Promise<ChatResponse> {
-    const todayDate = now().toISOString().slice(0, 10);
+    const requestNow = now();
+    const userTimezone = request.user?.timezone ?? "Asia/Kathmandu";
+    const todayDate = formatDateOnlyInTimeZone(requestNow, userTimezone);
     const userCurrency = request.user?.currency ?? "NPR";
     const promptContext = await loadSystemPromptContext({
       userId: request.userId,
@@ -2232,7 +2276,7 @@ export const createChatOrchestrator = ({
     });
     const systemPrompt = buildSystemPrompt({
       todayDate,
-      userTimezone: "Asia/Kathmandu",
+      userTimezone,
       userCurrency: promptContext.userCurrency,
       categories: promptContext.categories,
       budgets: promptContext.budgets,
@@ -2289,6 +2333,8 @@ export const createChatOrchestrator = ({
             budgetTools,
             queryTransactionsTool,
             queryUserTool,
+            now: requestNow,
+            userTimezone,
           });
 
           if (!executedTool.ok) {

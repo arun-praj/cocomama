@@ -1,3 +1,15 @@
+import {
+  addTimeZoneDays,
+  addTimeZoneMonths,
+  addTimeZoneYears,
+  dateOnlyPattern,
+  getLocalDayOfWeek,
+  parseDateOnlyInTimeZone,
+  startOfTimeZoneDay,
+  startOfTimeZoneMonth,
+  startOfTimeZoneYear,
+} from "./time-zone-date-service.js";
+
 export type TransactionRangePeriod = "weekly" | "month" | "yearly" | "custom";
 
 export type TransactionDateRangeResult =
@@ -17,6 +29,7 @@ type ResolveTransactionDateRangeInput = {
   period?: string | undefined;
   startDate?: string | undefined;
   endDate?: string | undefined;
+  timeZone?: string | undefined;
   now?: Date;
 };
 
@@ -29,28 +42,6 @@ const periodAliases: Record<string, TransactionRangePeriod> = {
   year: "yearly",
   custom: "custom",
 };
-
-const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/;
-
-const startOfUtcDay = (date: Date) =>
-  new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-  );
-
-const addUtcDays = (date: Date, days: number) =>
-  new Date(
-    Date.UTC(
-      date.getUTCFullYear(),
-      date.getUTCMonth(),
-      date.getUTCDate() + days,
-    ),
-  );
-
-const addUtcMonths = (date: Date, months: number) =>
-  new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1));
-
-const addUtcYears = (date: Date, years: number) =>
-  new Date(Date.UTC(date.getUTCFullYear() + years, 0, 1));
 
 const normalizePeriod = ({
   period,
@@ -69,19 +60,22 @@ const normalizePeriod = ({
 const parseDateBoundary = (
   value: string | undefined,
   boundary: "start" | "end",
+  timeZone?: string,
 ) => {
   if (!value) {
     return null;
+  }
+
+  if (dateOnlyPattern.test(value)) {
+    const date = parseDateOnlyInTimeZone(value, timeZone);
+
+    return boundary === "end" ? addTimeZoneDays(date, 1, timeZone) : date;
   }
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
     return null;
-  }
-
-  if (boundary === "end" && dateOnlyPattern.test(value)) {
-    return addUtcDays(date, 1);
   }
 
   return date;
@@ -91,6 +85,7 @@ export const resolveTransactionDateRange = ({
   period,
   startDate,
   endDate,
+  timeZone,
   now = new Date(),
 }: ResolveTransactionDateRangeInput = {}): TransactionDateRangeResult => {
   const normalizedPeriod = normalizePeriod({
@@ -108,8 +103,8 @@ export const resolveTransactionDateRange = ({
   }
 
   if (normalizedPeriod === "custom") {
-    const resolvedStartDate = parseDateBoundary(startDate, "start");
-    const resolvedEndDate = parseDateBoundary(endDate, "end");
+    const resolvedStartDate = parseDateBoundary(startDate, "start", timeZone);
+    const resolvedEndDate = parseDateBoundary(endDate, "end", timeZone);
 
     if (!resolvedStartDate || !resolvedEndDate) {
       return {
@@ -137,37 +132,39 @@ export const resolveTransactionDateRange = ({
   }
 
   if (normalizedPeriod === "weekly") {
-    const today = startOfUtcDay(now);
-    const daysSinceMonday = (today.getUTCDay() + 6) % 7;
-    const resolvedStartDate = addUtcDays(today, -daysSinceMonday);
+    const today = startOfTimeZoneDay(now, timeZone);
+    const daysSinceMonday = (getLocalDayOfWeek(now, timeZone) + 6) % 7;
+    const resolvedStartDate = addTimeZoneDays(
+      today,
+      -daysSinceMonday,
+      timeZone,
+    );
 
     return {
       ok: true,
       period: normalizedPeriod,
       startDate: resolvedStartDate,
-      endDate: addUtcDays(resolvedStartDate, 7),
+      endDate: addTimeZoneDays(resolvedStartDate, 7, timeZone),
     };
   }
 
   if (normalizedPeriod === "yearly") {
-    const resolvedStartDate = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+    const resolvedStartDate = startOfTimeZoneYear(now, timeZone);
 
     return {
       ok: true,
       period: normalizedPeriod,
       startDate: resolvedStartDate,
-      endDate: addUtcYears(resolvedStartDate, 1),
+      endDate: addTimeZoneYears(resolvedStartDate, 1, timeZone),
     };
   }
 
-  const resolvedStartDate = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
-  );
+  const resolvedStartDate = startOfTimeZoneMonth(now, timeZone);
 
   return {
     ok: true,
     period: normalizedPeriod,
     startDate: resolvedStartDate,
-    endDate: addUtcMonths(resolvedStartDate, 1),
+    endDate: addTimeZoneMonths(resolvedStartDate, 1, timeZone),
   };
 };

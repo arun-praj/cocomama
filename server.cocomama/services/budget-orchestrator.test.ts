@@ -17,6 +17,7 @@ describe("budget orchestration", () => {
             tool: "create_budget",
             arguments: {
               name: "Headphone",
+              category: "Electronics",
             },
           }),
         };
@@ -66,6 +67,7 @@ describe("budget orchestration", () => {
     expect(response.ok).toBe(true);
     expect(capturedInput).toEqual({
       name: "Headphone",
+      category: "Electronics",
       target_amount: 20000,
       recurring_contribution: 2000,
       contribution_cadence: "monthly",

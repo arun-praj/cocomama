@@ -90,6 +90,7 @@ type FinancialRecordResult = {
   formattedWalletBalance?: string;
   description?: string;
   category?: string;
+  categoryEmoji?: string;
   sourceName?: string;
   title?: string;
   recordDatetime?: string;
@@ -244,6 +245,23 @@ const voiceMinimumAudioBytes = 900;
 
 const aiDisclaimerDismissedStorageKey = "cocomama_ai_disclaimer_dismissed";
 
+const thinkingStatusLabels = [
+  "Thinking",
+  "Inferring",
+  "Reading context",
+  "Checking categories",
+  "Reasoning",
+  "Weighing options",
+  "Estimating",
+  "Looking for patterns",
+  "Drafting",
+  "Grounding answer",
+  "Reviewing tools",
+  "Steering",
+  "Connecting dots",
+  "Almost there",
+];
+
 function createSessionTitle(messageText: string) {
   const normalizedMessage = messageText.replace(/\s+/g, " ").trim();
 
@@ -255,29 +273,53 @@ function createSessionTitle(messageText: string) {
 }
 
 function ThinkingMessage() {
+  const [statusIndex, setStatusIndex] = useState(0);
+  const statusLabel = thinkingStatusLabels[statusIndex] ?? "Thinking";
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setStatusIndex(
+        (currentIndex) => (currentIndex + 1) % thinkingStatusLabels.length,
+      );
+    }, 1500);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
   return (
     <motion.article
-      aria-label="Cocobaa is thinking"
+      aria-label={`Cocobaa is ${statusLabel.toLowerCase()}`}
       className="flex px-1"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 6 }}
       transition={{ duration: 0.18, ease: "easeOut" }}
     >
-      <div className="flex items-center gap-1 py-3 text-text">
-        {[0, 1, 2].map((dot) => (
-          <motion.span
-            key={dot}
-            className="size-2 rounded-full bg-text-soft"
-            animate={{ opacity: [0.35, 1, 0.35], y: [0, -3, 0] }}
-            transition={{
-              duration: 0.9,
-              ease: "easeInOut",
-              repeat: Infinity,
-              delay: dot * 0.14,
-            }}
-          />
-        ))}
+      <div className="inline-flex items-center gap-2.5 rounded-full bg-surface-muted px-3 py-2 text-text shadow-sm">
+        <span className="flex items-center gap-1" aria-hidden="true">
+          {[0, 1, 2].map((dot) => (
+            <motion.span
+              key={dot}
+              className="size-1.5 rounded-full bg-text-soft"
+              animate={{ opacity: [0.35, 1, 0.35], y: [0, -3, 0] }}
+              transition={{
+                duration: 0.9,
+                ease: "easeInOut",
+                repeat: Infinity,
+                delay: dot * 0.14,
+              }}
+            />
+          ))}
+        </span>
+        <motion.span
+          key={statusLabel}
+          className="min-w-28 text-sm font-semibold text-text-muted"
+          initial={{ opacity: 0, y: 3 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+        >
+          {statusLabel}...
+        </motion.span>
       </div>
     </motion.article>
   );
@@ -359,7 +401,7 @@ function ChatPageSkeleton() {
 
       <div className="shrink-0 border-t border-border bg-background/96 px-4 py-3 backdrop-blur">
         <div
-          className="mx-auto flex max-w-3xl items-end gap-2 rounded-xl border border-border bg-surface p-2 shadow-[0_12px_40px_rgba(15,23,42,0.08)]"
+          className="mx-auto flex max-w-3xl items-end gap-2 rounded-xl border border-border bg-surface p-2 shadow-[0_8px_24px_rgba(15,23,42,0.055)]"
           aria-hidden="true"
         >
           <SkeletonBlock className="size-10 shrink-0" />
@@ -557,7 +599,7 @@ function QueryInputHoverCard({
   return (
     <div
       ref={onFloatingNode}
-      className="z-60 w-90 max-w-[calc(100vw-1.5rem)] rounded-lg border border-border bg-background p-3 text-left shadow-[0_20px_70px_rgba(15,23,42,0.20)]"
+      className="z-60 w-90 max-w-[calc(100vw-1.5rem)] rounded-lg border border-border bg-background p-3 text-left shadow-[0_14px_40px_rgba(15,23,42,0.12)]"
       style={floatingStyles}
       {...floatingProps}
     >
@@ -848,7 +890,9 @@ function FinancialRecordCard({
         : result.savingId;
   const primaryDetail =
     kind === "expense"
-      ? result.category
+      ? result.categoryEmoji && result.category
+        ? `${result.categoryEmoji} ${result.category}`
+        : result.category
       : kind === "income"
         ? result.sourceName
         : result.status;
@@ -941,11 +985,17 @@ function FinancialRecordCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
           <span className="grid size-9 shrink-0 place-items-center rounded-md bg-emerald-50 text-primary">
-            <CircleDollarSign
-              className="size-5"
-              strokeWidth={1.9}
-              aria-hidden="true"
-            />
+            {result.categoryEmoji ? (
+              <span className="text-lg leading-none" aria-hidden="true">
+                {result.categoryEmoji}
+              </span>
+            ) : (
+              <CircleDollarSign
+                className="size-5"
+                strokeWidth={1.9}
+                aria-hidden="true"
+              />
+            )}
           </span>
           <div className="min-w-0">
             <p
@@ -2879,6 +2929,32 @@ export default function Home() {
     addStoppedResponseMessage();
   }
 
+  function closeChat() {
+    stopVoiceConversation();
+    stopVoicePlayback();
+    chatAbortControllerRef.current?.abort();
+    chatAbortControllerRef.current = null;
+    clearPendingChatTimers();
+    setIsThinking(false);
+    setTypingMessageId(null);
+
+    try {
+      const referrer = document.referrer ? new URL(document.referrer) : null;
+
+      if (
+        referrer?.origin === window.location.origin &&
+        referrer.pathname !== window.location.pathname
+      ) {
+        window.history.back();
+        return;
+      }
+    } catch {
+      // Fall back below when the referrer cannot be parsed.
+    }
+
+    window.location.assign("/transactions");
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -2975,7 +3051,7 @@ export default function Home() {
           <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur lg:px-6">
             <div className="flex min-w-0 items-center gap-3">
               <motion.button
-                className="grid size-10 place-items-center rounded-md border border-border bg-surface text-text-muted transition hover:text-text"
+                className="hidden size-10 place-items-center rounded-md border border-border bg-surface text-text-muted transition hover:text-text lg:grid"
                 type="button"
                 aria-label="Open chat history"
                 aria-controls="mobile-chat-history"
@@ -3004,6 +3080,17 @@ export default function Home() {
                   On track
                 </span>
               )}
+              <motion.button
+                className="grid size-10 place-items-center rounded-md border border-border bg-surface text-text-muted transition hover:bg-surface-muted hover:text-text"
+                type="button"
+                aria-label="Close chat"
+                title="Close chat"
+                onClick={closeChat}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.96 }}
+              >
+                <X className="size-5" strokeWidth={1.9} aria-hidden="true" />
+              </motion.button>
             </div>
           </header>
 
@@ -3168,7 +3255,7 @@ export default function Home() {
                       ) : null}
                     </AnimatePresence>
                     <form
-                      className="relative mx-auto flex max-w-3xl items-end gap-2 rounded-xl border border-border bg-surface p-2 shadow-[0_12px_40px_rgba(15,23,42,0.08)]"
+                      className="relative mx-auto flex max-w-3xl items-end gap-2 rounded-xl border border-border bg-surface p-2 shadow-[0_8px_24px_rgba(15,23,42,0.055)]"
                       onSubmit={handleSubmit}
                     >
                       <AnimatePresence>

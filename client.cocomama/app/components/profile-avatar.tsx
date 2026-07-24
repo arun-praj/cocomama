@@ -17,7 +17,7 @@ export function ProfileAvatar({
 
   return (
     <span
-      className={`grid place-items-center overflow-hidden rounded-full border border-border ${
+      className={`grid place-items-center overflow-hidden rounded-lg border border-border ${
         hasProfilePhoto
           ? "bg-cover bg-center bg-no-repeat"
           : "bg-text text-surface"

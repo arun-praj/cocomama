@@ -8,6 +8,7 @@ import type {
   TransactionType,
   UpdateCategoryInput,
 } from "../tools/types.js";
+import { resolveCategoryEmoji } from "./category-emoji-service.js";
 import type { ChatToolCallSummary } from "./transaction-record-service.js";
 
 export interface CategoryUserContext {
@@ -33,6 +34,7 @@ const categoryToolCall = ({
     id?: string;
     kind: TransactionType;
     name: string;
+    emoji?: string;
   };
 }): ChatToolCallSummary => ({
   name,
@@ -41,8 +43,9 @@ const categoryToolCall = ({
   input,
   result: {
     title: category.name,
-    description: `${category.kind} category`,
+    description: `${category.emoji ? `${category.emoji} ` : ""}${category.kind} category`,
     category: category.name,
+    ...(category.emoji ? { emoji: category.emoji } : {}),
     status: "active",
     ...(category.id ? { savingId: category.id } : {}),
   },
@@ -155,11 +158,12 @@ export const createCategory = async ({
     const categorySummary = {
       ...(category?.id ? { id: category.id } : {}),
       kind: category?.kind ?? input.kind,
-      name,
+      name: category?.name ?? name,
+      ...(category?.emoji ? { emoji: category.emoji } : {}),
     };
 
     return {
-      response: `### Category already exists\n\n**${formatKindLabel(input.kind)}:** ${name}`,
+      response: `### Category already exists\n\n${categorySummary.emoji ?? ""} **${formatKindLabel(input.kind)}:** ${categorySummary.name}`,
       toolCalls: [
         categoryToolCall({
           name: "create_category",
@@ -177,6 +181,7 @@ export const createCategory = async ({
       userId: user.id,
       kind: input.kind,
       name,
+      emoji: resolveCategoryEmoji({ kind: input.kind, name }),
     })
     .returning();
 
@@ -185,7 +190,7 @@ export const createCategory = async ({
   }
 
   return {
-    response: `### Category added\n\n**${formatKindLabel(input.kind)}:** ${name}`,
+    response: `### Category added\n\n${category.emoji} **${formatKindLabel(input.kind)}:** ${name}`,
     toolCalls: [
       categoryToolCall({
         name: "create_category",
@@ -216,6 +221,7 @@ export const queryCategories = async ({
     .select({
       kind: categories.kind,
       name: categories.name,
+      emoji: categories.emoji,
     })
     .from(categories)
     .where(and(...conditions))
@@ -223,7 +229,7 @@ export const queryCategories = async ({
   const grouped = rows.reduce<Record<TransactionType, string[]>>(
     (currentGroups, row) => ({
       ...currentGroups,
-      [row.kind]: [...currentGroups[row.kind], row.name],
+      [row.kind]: [...currentGroups[row.kind], `${row.emoji} ${row.name}`],
     }),
     { expense: [], income: [], savings: [] },
   );
@@ -277,9 +283,10 @@ export const updateCategory = async ({
   }
 
   const newName = normalizeCategoryName(input.new_name);
+  const emoji = resolveCategoryEmoji({ kind: input.kind, name: newName });
   const [updatedCategory] = await db
     .update(categories)
-    .set({ name: newName })
+    .set({ name: newName, emoji })
     .where(
       and(
         eq(categories.id, category.id),
@@ -294,7 +301,7 @@ export const updateCategory = async ({
   }
 
   return {
-    response: `### Category renamed\n\n**${formatKindLabel(input.kind)}:** ${input.name} -> ${newName}`,
+    response: `### Category renamed\n\n${updatedCategory.emoji} **${formatKindLabel(input.kind)}:** ${input.name} -> ${newName}`,
     toolCalls: [
       categoryToolCall({
         name: "update_category",

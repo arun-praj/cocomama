@@ -59,6 +59,37 @@ describe("transaction date ranges", () => {
     expect(range.endDate.toISOString()).toBe("2026-07-13T00:00:00.000Z");
   });
 
+  it("resolves date-only ranges in the user's timezone", () => {
+    const range = resolveTransactionDateRange({
+      period: "month",
+      timeZone: "Asia/Kathmandu",
+      now: new Date("2026-07-24T00:30:00.000Z"),
+    });
+    const customRange = resolveTransactionDateRange({
+      period: "custom",
+      startDate: "2026-07-10",
+      endDate: "2026-07-12",
+      timeZone: "Asia/Kathmandu",
+      now,
+    });
+
+    expect(range.ok).toBe(true);
+    if (range.ok) {
+      expect(range.startDate.toISOString()).toBe("2026-06-30T18:15:00.000Z");
+      expect(range.endDate.toISOString()).toBe("2026-07-31T18:15:00.000Z");
+    }
+
+    expect(customRange.ok).toBe(true);
+    if (customRange.ok) {
+      expect(customRange.startDate.toISOString()).toBe(
+        "2026-07-09T18:15:00.000Z",
+      );
+      expect(customRange.endDate.toISOString()).toBe(
+        "2026-07-12T18:15:00.000Z",
+      );
+    }
+  });
+
   it("rejects invalid custom ranges", () => {
     expect(
       resolveTransactionDateRange({

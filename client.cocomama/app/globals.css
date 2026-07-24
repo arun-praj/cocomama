@@ -30,15 +30,33 @@
   --color-warning: var(--warning);
   --color-danger: var(--danger);
   --color-info: var(--info);
-  --font-sans: var(--font-source-sans);
+  --font-sans: var(--font-nunito-sans);
+  --font-display: var(--font-fraunces);
   --font-mono: var(--font-geist-mono);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 8px 20px rgba(15, 23, 42, 0.055);
+  --shadow-lg: 0 12px 28px rgba(15, 23, 42, 0.07);
+  --shadow-xl: 0 18px 38px rgba(15, 23, 42, 0.08);
+  --shadow-2xl: 0 22px 48px rgba(15, 23, 42, 0.1);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-source-sans), "Source Sans 3", sans-serif;
+  font-family: var(--font-nunito-sans), "Nunito Sans", sans-serif;
   text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 650;
+  letter-spacing: 0;
 }
 
 a[href],
@@ -63,4 +81,13 @@ input:disabled,
 ::selection {
   background: rgba(36, 92, 87, 0.16);
   color: var(--text);
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }

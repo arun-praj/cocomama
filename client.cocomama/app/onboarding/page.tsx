@@ -217,7 +217,7 @@ function SearchableSelect({
         <AnimatePresence>
           {isOpen ? (
             <motion.div
-              className="absolute left-0 right-0 top-12 z-30 rounded-lg border border-border bg-surface p-2 shadow-[0_16px_44px_rgba(15,23,42,0.12)]"
+              className="absolute left-0 right-0 top-12 z-30 rounded-lg border border-border bg-surface p-2 shadow-[0_10px_28px_rgba(15,23,42,0.07)]"
               initial={{ opacity: 0, y: 6, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 4, scale: 0.98 }}
@@ -306,11 +306,15 @@ function SearchableSelect({
 function getRedirectPath() {
   const nextPath = new URLSearchParams(window.location.search).get("next");
 
-  if (nextPath?.startsWith("/") && !nextPath.startsWith("//")) {
+  if (
+    nextPath?.startsWith("/") &&
+    !nextPath.startsWith("//") &&
+    nextPath !== "/"
+  ) {
     return nextPath;
   }
 
-  return "/";
+  return "/home";
 }
 
 export default function OnboardingPage() {
@@ -424,7 +428,7 @@ export default function OnboardingPage() {
       const nextPath = getRedirectPath();
       const welcomeUrl = new URL("/welcome", window.location.origin);
 
-      if (nextPath !== "/") {
+      if (nextPath !== "/home") {
         welcomeUrl.searchParams.set("next", nextPath);
       }
 

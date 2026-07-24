@@ -3,6 +3,7 @@ import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { db } from "../db/client.js";
 import {
+  budgets,
   categories,
   savingsInstruments,
   transactions,
@@ -24,6 +25,13 @@ import {
   listDueBudgetNotifications,
   markBudgetNotificationDelivered,
 } from "../services/budget-notification-service.js";
+import { createBudget } from "../services/budget-tool-service.js";
+import {
+  getRandomDiceBearFunEmojiAvatarUrl,
+  isAllowedUserProfile,
+} from "../services/profile-avatar-service.js";
+import { resolveCategoryEmoji } from "../services/category-emoji-service.js";
+import { createBudgetInputSchema } from "../tools/schemas.js";
 
 const transactionTypes = ["expense", "income", "savings"] as const;
 
@@ -38,6 +46,13 @@ const onboardingSchema = z
 const profileUpdateSchema = z
   .object({
     name: z.string().trim().min(1).max(80).optional(),
+    country: z
+      .string()
+      .trim()
+      .length(2)
+      .regex(/^[a-zA-Z]{2}$/)
+      .transform((country) => country.toUpperCase())
+      .optional(),
     currency: z
       .string()
       .trim()
@@ -49,7 +64,9 @@ const profileUpdateSchema = z
       .string()
       .trim()
       .max(600_000)
-      .regex(/^data:image\/(png|jpeg|webp);base64,[a-zA-Z0-9+/=]+$/)
+      .refine(isAllowedUserProfile, {
+        message: "Choose a supported profile photo or fun emoji avatar.",
+      })
       .nullable()
       .optional(),
   })
@@ -57,6 +74,7 @@ const profileUpdateSchema = z
   .refine(
     (data) =>
       data.name !== undefined ||
+      data.country !== undefined ||
       data.currency !== undefined ||
       data.userProfile !== undefined,
     {
@@ -133,6 +151,7 @@ type TransactionListItem = {
   amount: number;
   merchant: string | null;
   category: string | null;
+  categoryEmoji: string | null;
   savingsInstrument: string | null;
   isRecurring: boolean;
   occurredAt: string;
@@ -140,6 +159,25 @@ type TransactionListItem = {
 };
 
 type TransactionGroups = Record<TransactionType, TransactionListItem[]>;
+
+type BudgetListItem = {
+  id: string;
+  name: string;
+  targetAmount: number | null;
+  currentAmount: number;
+  progressPercent: number;
+  category: string | null;
+  categoryEmoji: string | null;
+  recurringContribution: number | null;
+  contributionCadence: "none" | "monthly";
+  targetDate: string | null;
+  notificationCadence: "none" | "once" | "daily" | "monthly";
+  nextNotificationAt: string | null;
+  status: "active" | "completed" | "archived";
+  createdAt: string;
+};
+
+const defaultUserTimeZone = "Asia/Kathmandu";
 
 const setOnboardingCompletedCookie = (reply: {
   header: (name: string, value: string) => unknown;
@@ -158,8 +196,27 @@ const toAppUser = (user: typeof users.$inferSelect) => ({
   country: user.country,
   currency: user.currency,
   timezone: user.timezone,
+  spendableAmount: Number(user.spendableBalance ?? 0),
   onboardingCompleted: user.onboardingCompleted,
 });
+
+const ensureUserProfile = async (user: typeof users.$inferSelect) => {
+  if (user.userProfile) {
+    return user;
+  }
+
+  const userProfile = getRandomDiceBearFunEmojiAvatarUrl();
+  const [updatedUser] = await db
+    .update(users)
+    .set({
+      userProfile,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, user.id))
+    .returning();
+
+  return updatedUser ?? { ...user, userProfile };
+};
 
 const toMinor = (amount: number) => Math.round(amount * 100);
 
@@ -223,6 +280,7 @@ const updateRecord = async ({
 
   let categoryId = existingTransaction.categoryId;
   let categoryName = data.category;
+  let categoryEmoji: string | undefined;
 
   if (data.category) {
     const normalizedCategory = data.category.trim().toLowerCase();
@@ -241,6 +299,7 @@ const updateRecord = async ({
     if (existingCategory) {
       categoryId = existingCategory.id;
       categoryName = existingCategory.name;
+      categoryEmoji = existingCategory.emoji;
     } else {
       const [insertedCategory] = await db
         .insert(categories)
@@ -248,12 +307,25 @@ const updateRecord = async ({
           userId: getAuthenticatedUserId(request),
           kind: type,
           name: normalizedCategory,
+          emoji: resolveCategoryEmoji({ kind: type, name: normalizedCategory }),
         })
         .returning();
 
       categoryId = insertedCategory?.id ?? categoryId;
       categoryName = insertedCategory?.name ?? categoryName;
+      categoryEmoji = insertedCategory?.emoji ?? categoryEmoji;
     }
+  }
+
+  if (categoryId && (!categoryName || !categoryEmoji)) {
+    const [category] = await db
+      .select({ name: categories.name, emoji: categories.emoji })
+      .from(categories)
+      .where(eq(categories.id, categoryId))
+      .limit(1);
+
+    categoryName = categoryName ?? category?.name;
+    categoryEmoji = category?.emoji;
   }
 
   const nextOccurredAt =
@@ -303,6 +375,7 @@ const updateRecord = async ({
         type === "savings" ? formatMoney(updatedAmount, currency) : null,
       description: updatedTransaction.description,
       category: categoryName,
+      categoryEmoji,
       sourceName: type === "income" ? updatedTransaction.title : undefined,
       title: updatedTransaction.title,
       recordDatetime: updatedTransaction.occurredAt.toISOString(),
@@ -340,6 +413,49 @@ const summarizeTransactions = (items: TransactionListItem[]) => ({
   count: items.length,
   totalAmount: items.reduce((total, item) => total + item.amount, 0),
 });
+
+const toBudgetListItem = (row: {
+  id: string;
+  name: string;
+  targetAmount: string | null;
+  currentAmount: string;
+  category: string | null;
+  categoryEmoji: string | null;
+  recurringContribution: string | null;
+  contributionCadence: "none" | "monthly";
+  targetDate: string | null;
+  notificationCadence: "none" | "once" | "daily" | "monthly";
+  nextNotificationAt: Date | null;
+  status: BudgetListItem["status"];
+  createdAt: Date;
+}): BudgetListItem => {
+  const targetAmount =
+    row.targetAmount === null ? null : Number(row.targetAmount);
+  const currentAmount = Number(row.currentAmount);
+
+  return {
+    id: row.id,
+    name: row.name,
+    targetAmount,
+    currentAmount,
+    progressPercent:
+      targetAmount && targetAmount > 0
+        ? Math.min(100, Math.round((currentAmount / targetAmount) * 100))
+        : 0,
+    category: row.category,
+    categoryEmoji: row.categoryEmoji,
+    recurringContribution:
+      row.recurringContribution === null
+        ? null
+        : Number(row.recurringContribution),
+    contributionCadence: row.contributionCadence,
+    targetDate: row.targetDate,
+    notificationCadence: row.notificationCadence,
+    nextNotificationAt: row.nextNotificationAt?.toISOString() ?? null,
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
+  };
+};
 
 const optionalString = (value: unknown) =>
   typeof value === "string" ? value : undefined;
@@ -474,7 +590,7 @@ export const appRoutes: FastifyPluginAsync = async (app) => {
       }
 
       return {
-        user: toAppUser(user),
+        user: toAppUser(await ensureUserProfile(user)),
       };
     },
   );
@@ -496,6 +612,7 @@ export const appRoutes: FastifyPluginAsync = async (app) => {
 
       const updates: {
         name?: string;
+        country?: string;
         currency?: string;
         userProfile?: string | null;
         updatedAt: Date;
@@ -505,6 +622,10 @@ export const appRoutes: FastifyPluginAsync = async (app) => {
 
       if (parsed.data.name !== undefined) {
         updates.name = parsed.data.name;
+      }
+
+      if (parsed.data.country !== undefined) {
+        updates.country = parsed.data.country;
       }
 
       if (parsed.data.currency !== undefined) {
@@ -577,6 +698,7 @@ export const appRoutes: FastifyPluginAsync = async (app) => {
           id: categories.id,
           kind: categories.kind,
           name: categories.name,
+          emoji: categories.emoji,
           keywords: categories.keywords,
           isDefault: sql<boolean>`${categories.userId} IS NULL`,
         })
@@ -588,6 +710,83 @@ export const appRoutes: FastifyPluginAsync = async (app) => {
 
       return {
         categories: rows,
+      };
+    },
+  );
+
+  app.get(
+    "/api/app/budgets",
+    {
+      preHandler: requireAuth,
+    },
+    async (request) => {
+      const rows = await db
+        .select({
+          id: budgets.id,
+          name: budgets.name,
+          targetAmount: budgets.targetAmount,
+          currentAmount: budgets.currentAmount,
+          category: categories.name,
+          categoryEmoji: categories.emoji,
+          recurringContribution: budgets.recurringContribution,
+          contributionCadence: budgets.contributionCadence,
+          targetDate: budgets.targetDate,
+          notificationCadence: budgets.notificationCadence,
+          nextNotificationAt: budgets.nextNotificationAt,
+          status: budgets.status,
+          createdAt: budgets.createdAt,
+        })
+        .from(budgets)
+        .leftJoin(categories, eq(budgets.categoryId, categories.id))
+        .where(
+          and(
+            eq(budgets.userId, getAuthenticatedUserId(request)),
+            eq(budgets.status, "active"),
+          ),
+        )
+        .orderBy(desc(budgets.updatedAt), desc(budgets.createdAt))
+        .limit(12);
+
+      return {
+        budgets: rows.map(toBudgetListItem),
+      };
+    },
+  );
+
+  app.post(
+    "/api/app/budgets",
+    {
+      preHandler: requireAuth,
+    },
+    async (request, reply) => {
+      const parsed = createBudgetInputSchema.safeParse(request.body);
+
+      if (!parsed.success) {
+        return reply.code(400).send({
+          error: "validation_error",
+          details: parsed.error.flatten(),
+        });
+      }
+
+      const session = getAuthenticatedSession(request);
+      const currency = optionalString(session.user.currency) ?? "NPR";
+      const result = await createBudget({
+        user: { id: getAuthenticatedUserId(request), currency },
+        input: parsed.data,
+        now: new Date(),
+      });
+
+      if (result.toolCalls.length === 0) {
+        return reply.code(409).send({
+          error: "budget_not_created",
+          message: result.response,
+        });
+      }
+
+      return {
+        ok: true,
+        message: result.response,
+        toolCalls: result.toolCalls,
       };
     },
   );
@@ -632,12 +831,14 @@ export const appRoutes: FastifyPluginAsync = async (app) => {
           userId: getAuthenticatedUserId(request),
           kind: parsed.data.kind,
           name,
+          emoji: resolveCategoryEmoji({ kind: parsed.data.kind, name }),
           keywords: dedupeKeywords(parsed.data.keywords),
         })
         .returning({
           id: categories.id,
           kind: categories.kind,
           name: categories.name,
+          emoji: categories.emoji,
           keywords: categories.keywords,
         });
 
@@ -772,7 +973,23 @@ export const appRoutes: FastifyPluginAsync = async (app) => {
         });
       }
 
-      const dateRange = resolveTransactionDateRange(parsedQuery.data);
+      const session = getAuthenticatedSession(request);
+      const sessionCurrency =
+        typeof session.user.currency === "string"
+          ? session.user.currency
+          : "NPR";
+      const sessionTimeZone =
+        optionalString(session.user.timezone) ?? defaultUserTimeZone;
+      const [user] = await db
+        .select({ currency: users.currency, timezone: users.timezone })
+        .from(users)
+        .where(eq(users.id, getAuthenticatedUserId(request)))
+        .limit(1);
+      const timeZone = user?.timezone ?? sessionTimeZone;
+      const dateRange = resolveTransactionDateRange({
+        ...parsedQuery.data,
+        timeZone,
+      });
 
       if (!dateRange.ok) {
         return reply.code(400).send({
@@ -782,18 +999,7 @@ export const appRoutes: FastifyPluginAsync = async (app) => {
         });
       }
 
-      const session = getAuthenticatedSession(request);
       const groups = createEmptyTransactionGroups();
-      const sessionCurrency =
-        typeof session.user.currency === "string"
-          ? session.user.currency
-          : "NPR";
-
-      const [user] = await db
-        .select({ currency: users.currency })
-        .from(users)
-        .where(eq(users.id, getAuthenticatedUserId(request)))
-        .limit(1);
       const rows = await db
         .select({
           id: transactions.id,
@@ -803,6 +1009,7 @@ export const appRoutes: FastifyPluginAsync = async (app) => {
           description: transactions.description,
           merchant: transactions.merchant,
           category: categories.name,
+          categoryEmoji: categories.emoji,
           savingsInstrument: savingsInstruments.name,
           isRecurring: transactions.isRecurring,
           occurredAt: transactions.occurredAt,
@@ -822,7 +1029,7 @@ export const appRoutes: FastifyPluginAsync = async (app) => {
             lt(transactions.occurredAt, dateRange.endDate),
           ),
         )
-        .orderBy(desc(transactions.occurredAt))
+        .orderBy(desc(transactions.occurredAt), desc(transactions.createdAt))
         .limit(200);
 
       for (const row of rows) {
@@ -834,6 +1041,7 @@ export const appRoutes: FastifyPluginAsync = async (app) => {
           amount: Number(row.amount),
           merchant: row.merchant,
           category: row.category,
+          categoryEmoji: row.categoryEmoji,
           savingsInstrument: row.savingsInstrument,
           isRecurring: row.isRecurring,
           occurredAt: row.occurredAt.toISOString(),
@@ -843,6 +1051,7 @@ export const appRoutes: FastifyPluginAsync = async (app) => {
 
       return {
         currency: user?.currency ?? sessionCurrency,
+        timeZone,
         range: {
           period: dateRange.period,
           startDate: dateRange.startDate.toISOString(),

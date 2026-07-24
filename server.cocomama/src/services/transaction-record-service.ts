@@ -11,6 +11,9 @@ import type {
   ModifyTransactionInput,
   TransactionType,
 } from "../tools/types.js";
+import { inferSpecificExpenseCategoryName } from "./expense-category-inference-service.js";
+import { resolveCategoryEmoji } from "./category-emoji-service.js";
+import { getRandomDiceBearFunEmojiAvatarUrl } from "./profile-avatar-service.js";
 
 export interface TransactionUserContext {
   id: string;
@@ -35,6 +38,7 @@ export interface FinancialRecordResult {
   formattedTargetAmount?: string | null;
   description?: string;
   category?: string;
+  categoryEmoji?: string;
   sourceName?: string;
   title?: string;
   recordDatetime?: string;
@@ -118,6 +122,23 @@ const genericCategoryTokens = new Set([
 
 const tokenizeForCategoryMatch = (value: string) =>
   tokenizeName(value).filter((token) => !genericCategoryTokens.has(token));
+
+const autoCreateCategoryDenyList = new Set([
+  "misc",
+  "miscellaneous",
+  "other",
+  "shopping",
+  "uncategorized",
+]);
+
+const isAutoCreatableCategoryName = (value: string) => {
+  const normalizedName = normalizeName(value);
+
+  return (
+    normalizedName.length >= 3 &&
+    !autoCreateCategoryDenyList.has(normalizedName)
+  );
+};
 
 const titleCase = (value: string) =>
   value
@@ -311,6 +332,7 @@ export const ensureUserForTransactions = async (
       email,
       currency: user.currency ?? "NPR",
       timezone: user.timezone ?? "Asia/Kathmandu",
+      userProfile: getRandomDiceBearFunEmojiAvatarUrl(),
       onboardingCompleted: true,
     })
     .onConflictDoNothing()
@@ -338,6 +360,7 @@ const resolveCategory = async (
   type: TransactionType,
   categoryName: string,
   candidates: string[] = [],
+  suggestedNewCategory?: string,
 ) => {
   const normalizedCategory = normalizeName(categoryName || "other");
   const categoryRows = await db
@@ -359,6 +382,64 @@ const resolveCategory = async (
   const exactCategory = userCategories.find(
     (category) => normalizeName(category.name) === normalizedCategory,
   );
+  const specificExpenseCategory =
+    type === "expense"
+      ? inferSpecificExpenseCategoryName([
+          categoryName,
+          suggestedNewCategory,
+          ...candidates,
+        ])
+      : undefined;
+  const autoCreateCategoryName =
+    specificExpenseCategory ?? suggestedNewCategory?.trim();
+
+  if (
+    autoCreateCategoryName &&
+    isAutoCreatableCategoryName(autoCreateCategoryName)
+  ) {
+    const normalizedAutoCreateCategory = normalizeName(autoCreateCategoryName);
+    const existingAutoCreateCategory = userCategories.find(
+      (category) =>
+        normalizeName(category.name) === normalizedAutoCreateCategory,
+    );
+
+    if (existingAutoCreateCategory) {
+      return existingAutoCreateCategory;
+    }
+
+    const displayName = titleCase(autoCreateCategoryName);
+    const [insertedCategory] = await db
+      .insert(categories)
+      .values({
+        userId,
+        kind: type,
+        name: displayName,
+        emoji: resolveCategoryEmoji({ kind: type, name: displayName }),
+        keywords: [displayName],
+      })
+      .onConflictDoNothing()
+      .returning();
+
+    if (insertedCategory) {
+      return insertedCategory;
+    }
+
+    const [createdByRaceCategory] = await db
+      .select()
+      .from(categories)
+      .where(
+        and(
+          eq(categories.userId, userId),
+          eq(categories.kind, type),
+          sql`lower(${categories.name}) = ${normalizedAutoCreateCategory}`,
+        ),
+      )
+      .limit(1);
+
+    if (createdByRaceCategory) {
+      return createdByRaceCategory;
+    }
+  }
 
   if (exactCategory) {
     return exactCategory;
@@ -431,12 +512,14 @@ const buildRecordResult = ({
   input,
   currency,
   category,
+  categoryEmoji,
   convertedAmount,
 }: {
   id: string;
   input: CreateTransactionInput;
   currency: string;
   category: string;
+  categoryEmoji: string;
   convertedAmount: ReturnType<typeof convertCurrencyAmount>;
 }): FinancialRecordResult => {
   const amountMinor = toMinor(convertedAmount.amount);
@@ -466,6 +549,7 @@ const buildRecordResult = ({
         : null,
     description: input.description,
     category,
+    categoryEmoji,
     title,
     recordDatetime: recordDate,
     occurredAt: recordDate,
@@ -507,6 +591,7 @@ export const createTransactionRecord = async ({
     [input.title, input.description, input.merchant].filter(
       (candidate): candidate is string => Boolean(candidate),
     ),
+    input.suggested_new_category,
   );
   const savingsInstrument = await ensureSavingsInstrument(
     transactionUser.id,
@@ -544,6 +629,7 @@ export const createTransactionRecord = async ({
     input,
     currency: targetCurrency,
     category: category.name,
+    categoryEmoji: category.emoji,
     convertedAmount,
   });
   const toolCall: ChatToolCallSummary = {

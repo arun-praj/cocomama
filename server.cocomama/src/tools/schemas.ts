@@ -70,6 +70,7 @@ export const queryTransactionsInputSchema = z
 export const createBudgetInputSchema = z
   .object({
     name: z.string().min(1),
+    category: optionalNameSchema,
     target_amount: positiveAmountSchema.optional(),
     target_date: isoDateSchema.optional(),
     recurring_contribution: positiveAmountSchema.optional(),
@@ -83,7 +84,7 @@ export const allocateToBudgetInputSchema = z
     budget_id: uuidSchema.optional(),
     budget_name: optionalNameSchema,
     amount: positiveAmountSchema,
-    occurred_at: isoDateSchema,
+    occurred_at: isoDateSchema.optional(),
     note: optionalNameSchema,
     source_transaction_id: uuidSchema.optional(),
   })

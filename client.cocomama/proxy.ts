@@ -6,6 +6,7 @@ const backendBaseUrl =
   "http://localhost:4000";
 
 const publicRoutes = new Set(["/login", "/signin"]);
+const appHomePath = "/home";
 
 type SessionResponse = {
   user?: {
@@ -102,7 +103,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(buildOnboardingRedirect(request));
     }
 
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL(appHomePath, request.url));
   }
 
   if (!hasCompletedOnboarding && request.nextUrl.pathname !== "/onboarding") {
@@ -116,7 +117,11 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL(nextPath, request.url));
     }
 
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL(appHomePath, request.url));
+  }
+
+  if (hasCompletedOnboarding && request.nextUrl.pathname === "/") {
+    return NextResponse.redirect(new URL(appHomePath, request.url));
   }
 
   return NextResponse.next();

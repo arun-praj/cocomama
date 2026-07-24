@@ -26,4 +26,15 @@ describe("expense message parser", () => {
       merchant: "Daraz",
     });
   });
+
+  it("infers specific categories for plants and clothing", () => {
+    expect(parseExpenseMessage("I bought plants at Rs 450")).toMatchObject({
+      category: "plants",
+      title: "Plants",
+    });
+    expect(parseExpenseMessage("I bought a shirt at Rs 900")).toMatchObject({
+      category: "clothing",
+      title: "Shirt",
+    });
+  });
 });

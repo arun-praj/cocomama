@@ -676,7 +676,7 @@ export default function FamilySettingsPage() {
           <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur lg:px-6">
             <div className="flex min-w-0 items-center gap-3">
               <motion.button
-                className="grid size-10 place-items-center rounded-md border border-border bg-surface text-text-muted transition hover:text-text"
+                className="hidden size-10 place-items-center rounded-md border border-border bg-surface text-text-muted transition hover:text-text lg:grid"
                 type="button"
                 aria-label="Open navigation"
                 aria-controls="family-navigation"
@@ -704,7 +704,7 @@ export default function FamilySettingsPage() {
             </div>
           </header>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-8 sm:px-6 lg:px-8">
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-28 pt-8 sm:px-6 lg:px-8 lg:pb-8">
             <div className="mx-auto w-full max-w-xl">
               {isLoadingFamily ? (
                 <div className="mx-auto flex w-full max-w-md items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-sm font-medium text-text-muted">

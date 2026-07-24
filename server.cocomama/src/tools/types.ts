@@ -94,6 +94,7 @@ export interface QueryTransactionsInput {
 
 export interface CreateBudgetInput {
   name: string;
+  category?: string | undefined;
   target_amount?: number | undefined;
   target_date?: string | undefined;
   recurring_contribution?: number | undefined;
@@ -105,7 +106,7 @@ export interface AllocateToBudgetInput {
   budget_id?: string | undefined;
   budget_name?: string | undefined;
   amount: number;
-  occurred_at: string;
+  occurred_at?: string | undefined;
   note?: string | undefined;
   source_transaction_id?: string | undefined;
 }
@@ -165,6 +166,7 @@ export interface UpdateBudgetInput {
   budget_name?: string | undefined;
   changes: {
     name?: string | undefined;
+    category?: string | undefined;
     target_amount?: number | undefined;
     target_date?: string | undefined;
     recurring_contribution?: number | undefined;

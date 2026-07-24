@@ -14,6 +14,7 @@ import {
   ReceiptText,
 } from "lucide-react";
 import { type PointerEvent, useEffect, useRef, useState } from "react";
+import { resolveTransactionEmoji } from "@/lib/transaction-emoji";
 import { AppSideNavigation } from "../components/app-side-navigation";
 
 type TransactionType = "expense" | "income" | "savings";
@@ -31,6 +32,7 @@ type TransactionListItem = {
   amount: number;
   merchant: string | null;
   category: string | null;
+  categoryEmoji: string | null;
   savingsInstrument: string | null;
   isRecurring: boolean;
   occurredAt: string;
@@ -44,6 +46,7 @@ type TransactionSummary = {
 
 type TransactionsResponse = {
   currency: string;
+  timeZone: string;
   range?: {
     period: TransactionRangePeriod;
     startDate: string;
@@ -181,22 +184,24 @@ function formatMoney(amount: number, currency: string) {
   }
 }
 
-function formatDate(value: string) {
+function formatDate(value: string, timeZone: string) {
   try {
     return new Intl.DateTimeFormat("en", {
       month: "short",
       day: "numeric",
+      timeZone,
     }).format(new Date(value));
   } catch {
     return value;
   }
 }
 
-function formatTime(value: string) {
+function formatTime(value: string, timeZone: string) {
   try {
     return new Intl.DateTimeFormat("en", {
       hour: "numeric",
       minute: "2-digit",
+      timeZone,
     }).format(new Date(value));
   } catch {
     return "";
@@ -510,6 +515,7 @@ function buildNetMoneyAxisLabels({
 function emptyTransactions(): TransactionsResponse {
   return {
     currency: "NPR",
+    timeZone: "Asia/Kathmandu",
     transactions: {
       expense: [],
       income: [],
@@ -527,18 +533,27 @@ function emptyTransactions(): TransactionsResponse {
 function TransactionRow({
   item,
   currency,
+  timeZone,
 }: {
   item: TransactionListItem;
   currency: string;
+  timeZone: string;
 }) {
   const isIncome = item.type === "income";
   const isSavings = item.type === "savings";
-  const metaSubject =
-    item.merchant ??
+  const transactionEmoji = resolveTransactionEmoji(item);
+  const detailLabel =
     item.category ??
     item.savingsInstrument ??
+    item.merchant ??
     item.description;
-  const timestamp = [formatDate(item.occurredAt), formatTime(item.occurredAt)]
+  const metaSubject = item.category
+    ? (item.merchant ?? item.savingsInstrument ?? item.description)
+    : null;
+  const timestamp = [
+    formatDate(item.occurredAt, timeZone),
+    formatTime(item.occurredAt, timeZone),
+  ]
     .filter(Boolean)
     .join(", ");
   const meta = [timestamp, metaSubject].filter(Boolean).join(" - ");
@@ -560,7 +575,9 @@ function TransactionRow({
         }`}
         aria-hidden="true"
       >
-        {isIncome ? (
+        {transactionEmoji ? (
+          <span className="text-lg leading-none">{transactionEmoji}</span>
+        ) : isIncome ? (
           <ArrowDownLeft className="size-4" strokeWidth={1.9} />
         ) : isSavings ? (
           <PiggyBank className="size-4" strokeWidth={1.9} />
@@ -572,10 +589,17 @@ function TransactionRow({
         <p className="truncate text-sm font-semibold leading-5 text-text">
           {item.title}
         </p>
-        <p className="mt-0.5 whitespace-normal wrap-break-word text-xs leading-4 text-text-soft">
-          {meta || formatDate(item.occurredAt)}
-          {item.isRecurring ? " - Recurring" : ""}
-        </p>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs leading-4 text-text-soft">
+          {detailLabel ? (
+            <span className="inline-flex max-w-full items-center rounded-full border border-border bg-background px-2 py-0.5 font-semibold text-text-muted">
+              <span className="truncate">{detailLabel}</span>
+            </span>
+          ) : null}
+          <span className="whitespace-normal wrap-break-word">
+            {meta || formatDate(item.occurredAt, timeZone)}
+            {item.isRecurring ? " - Recurring" : ""}
+          </span>
+        </div>
       </div>
       <div className="min-w-22 text-right">
         <p
@@ -687,7 +711,7 @@ function TransactionDateSelector({
 
       {isMenuOpen ? (
         <motion.div
-          className="absolute right-0 top-full z-30 mt-2 w-44 rounded-xl border border-border bg-surface p-1.5 shadow-xl"
+          className="absolute right-0 top-full z-30 mt-2 w-44 rounded-xl border border-border bg-surface p-1.5 shadow-lg"
           role="menu"
           initial={{ opacity: 0, y: -4, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -731,7 +755,7 @@ function TransactionDateSelector({
 
       {isCalendarOpen ? (
         <motion.div
-          className="absolute right-0 top-full z-30 mt-2 w-80 max-w-[calc(100vw-1.5rem)] rounded-xl border border-border bg-surface p-3 shadow-xl"
+          className="absolute right-0 top-full z-30 mt-2 w-80 max-w-[calc(100vw-1.5rem)] rounded-xl border border-border bg-surface p-3 shadow-lg"
           initial={{ opacity: 0, y: -4, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.16, ease: "easeOut" }}
@@ -1186,7 +1210,7 @@ export default function TransactionsPage() {
           <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur lg:px-6">
             <div className="flex min-w-0 items-center gap-3">
               <motion.button
-                className="grid size-10 place-items-center rounded-md border border-border bg-surface text-text-muted transition hover:text-text"
+                className="hidden size-10 place-items-center rounded-md border border-border bg-surface text-text-muted transition hover:text-text lg:grid"
                 type="button"
                 aria-label="Open navigation"
                 onClick={() => setIsNavigationOpen(true)}
@@ -1205,7 +1229,7 @@ export default function TransactionsPage() {
           </header>
 
           <div className="min-h-0 flex-1 overflow-y-auto bg-background py-4 sm:bg-[radial-gradient(circle_at_88%_8%,rgba(36,92,87,0.08),transparent_28%),radial-gradient(circle_at_4%_92%,rgba(36,99,166,0.06),transparent_26%)]">
-            <div className="mx-auto grid w-full max-w-5xl gap-3 px-3 pb-6 sm:px-6 lg:px-8">
+            <div className="mx-auto grid w-full max-w-5xl gap-3 px-3 pb-28 sm:px-6 lg:px-8 lg:pb-6">
               <motion.section
                 className="grid gap-3"
                 initial={{ opacity: 0, y: 10 }}
@@ -1253,7 +1277,7 @@ export default function TransactionsPage() {
                 transition={{ duration: 0.22, ease: "easeOut" }}
               >
                 <div
-                  className="grid w-full grid-cols-3 rounded-full border border-border bg-surface p-1 shadow-sm sm:w-auto sm:flex"
+                  className="grid h-8 w-full max-w-90.5 grid-cols-3 rounded-lg bg-[#eeeeef] p-0.5 sm:flex"
                   role="tablist"
                   aria-label="Transaction type"
                 >
@@ -1263,10 +1287,10 @@ export default function TransactionsPage() {
                     return (
                       <button
                         key={section.type}
-                        className={`min-w-0 rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:py-1.5 ${
+                        className={`min-w-0 rounded-md px-3 text-[13px] font-semibold leading-7 transition-colors duration-150 sm:flex-1 sm:px-4 ${
                           isActive
-                            ? "bg-primary text-white shadow-sm"
-                            : "text-text-muted hover:text-text"
+                            ? "bg-white text-[#3c3c43]"
+                            : "text-[rgba(60,60,67,0.64)] hover:text-[rgba(60,60,67,0.86)]"
                         }`}
                         type="button"
                         role="tab"
@@ -1298,16 +1322,33 @@ export default function TransactionsPage() {
                   aria-labelledby="active-transaction-type"
                 >
                   <header className="flex items-start justify-between gap-3 px-2 py-2 sm:px-3">
-                    <div className="min-w-0">
-                      <h2
-                        id="active-transaction-type"
-                        className="text-sm font-semibold text-text sm:text-base"
+                    <div className="flex min-w-0 items-start gap-2.5">
+                      <span
+                        className={`grid size-9 shrink-0 place-items-center rounded-full ${
+                          activeSection.type === "income"
+                            ? "bg-emerald-50 text-success"
+                            : activeSection.type === "savings"
+                              ? "bg-blue-50 text-info"
+                              : "bg-red-50 text-danger"
+                        }`}
+                        aria-hidden="true"
                       >
-                        {activeSection.label}
-                      </h2>
-                      <p className="mt-0.5 text-xs leading-5 text-text-muted sm:text-sm">
-                        {activeSection.description}
-                      </p>
+                        <activeSection.Icon
+                          className="size-4"
+                          strokeWidth={1.9}
+                        />
+                      </span>
+                      <div className="min-w-0">
+                        <h2
+                          id="active-transaction-type"
+                          className="text-sm font-semibold text-text sm:text-base"
+                        >
+                          {activeSection.label}
+                        </h2>
+                        <p className="mt-0.5 text-xs leading-5 text-text-muted sm:text-sm">
+                          {activeSection.description}
+                        </p>
+                      </div>
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="text-sm font-semibold text-text">
@@ -1328,6 +1369,7 @@ export default function TransactionsPage() {
                           key={item.id}
                           item={item}
                           currency={transactionsData.currency}
+                          timeZone={transactionsData.timeZone}
                         />
                       ))}
                     </ul>

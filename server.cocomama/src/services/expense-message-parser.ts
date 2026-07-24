@@ -1,3 +1,5 @@
+import { inferSpecificExpenseCategoryName } from "./expense-category-inference-service.js";
+
 export interface ParsedExpenseMessage {
   type: "expense";
   amount: string;
@@ -26,6 +28,12 @@ const cleanItemName = (value: string) =>
     .trim();
 
 const inferCategory = (itemName: string) => {
+  const specificCategory = inferSpecificExpenseCategoryName([itemName]);
+
+  if (specificCategory) {
+    return specificCategory.toLowerCase();
+  }
+
   if (
     /headphone|headset|earphone|earbud|laptop|phone|charger|electronics?/i.test(
       itemName,

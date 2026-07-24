@@ -127,6 +127,7 @@ export const categories = pgTable(
     userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
     kind: categoryKind("kind").notNull(),
     name: text("name").notNull(),
+    emoji: text("emoji").notNull().default("🏷️"),
     keywords: text("keywords")
       .array()
       .notNull()
@@ -172,6 +173,9 @@ export const budgets = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    categoryId: uuid("category_id").references(() => categories.id, {
+      onDelete: "set null",
+    }),
     name: text("name").notNull(),
     targetAmount: numeric("target_amount", { precision: 14, scale: 2 }),
     currentAmount: numeric("current_amount", { precision: 14, scale: 2 })
@@ -233,6 +237,7 @@ export const budgets = pgTable(
       table.userId,
       table.status,
     ),
+    categoryIndex: index("idx_budgets_category").on(table.categoryId),
     userNextNotificationIndex: index("idx_budgets_user_next_notification").on(
       table.userId,
       table.nextNotificationAt,

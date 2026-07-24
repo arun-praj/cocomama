@@ -6,6 +6,7 @@ import { env } from "./config/env.js";
 import { db } from "./db/client.js";
 import * as schema from "./db/schema.js";
 import { sendAuthEmail } from "./services/email-service.js";
+import { getRandomDiceBearFunEmojiAvatarUrl } from "./services/profile-avatar-service.js";
 
 const trustedOrigins = [
   env.BETTER_AUTH_URL,
@@ -53,6 +54,28 @@ export const auth = betterAuth({
         required: false,
         defaultValue: "Asia/Kathmandu",
         input: true,
+      },
+      userProfile: {
+        type: "string",
+        required: false,
+        input: true,
+      },
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        async before(user) {
+          return {
+            data: {
+              ...user,
+              userProfile:
+                typeof user.userProfile === "string" && user.userProfile
+                  ? user.userProfile
+                  : getRandomDiceBearFunEmojiAvatarUrl(),
+            },
+          };
+        },
       },
     },
   },

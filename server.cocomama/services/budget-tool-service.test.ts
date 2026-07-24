@@ -28,7 +28,8 @@ describe("budget tools", () => {
 
   it("creates, queries, updates, allocates to, and archives a reminder budget", async () => {
     const userId = randomUUID();
-    const { db, budgets, users } = await loadDatabase();
+    const { db, budgetAllocations, budgets, categories, users } =
+      await loadDatabase();
     const {
       allocateToBudget,
       createBudget,
@@ -46,11 +47,26 @@ describe("budget tools", () => {
       onboardingCompleted: true,
     });
     createdUserIds.push(userId);
+    const [category] = await db
+      .insert(categories)
+      .values({
+        userId,
+        kind: "expense",
+        name: "Electronics",
+        emoji: "💻",
+        keywords: ["Headphone"],
+      })
+      .returning();
+
+    if (!category) {
+      throw new Error("Expected budget category");
+    }
 
     const created = await createBudget({
       user: { id: userId, currency: "NPR" },
       input: {
         name: "Headphone",
+        category: "Electronics",
         target_amount: 20000,
         recurring_contribution: 2000,
         contribution_cadence: "monthly",
@@ -72,6 +88,7 @@ describe("budget tools", () => {
 
     expect(budget).toMatchObject({
       name: "Headphone",
+      categoryId: category.id,
       targetAmount: "20000.00",
       recurringContribution: "2000.00",
       contributionCadence: "monthly",
@@ -90,6 +107,7 @@ describe("budget tools", () => {
     });
 
     expect(listed.response).toContain("Headphone");
+    expect(listed.response).toContain("Electronics");
 
     if (!budget) {
       throw new Error("Expected created budget");
@@ -117,12 +135,22 @@ describe("budget tools", () => {
       input: {
         budget_id: budget.id,
         amount: 20000,
-        occurred_at: "2026-07-03T00:00:00.000Z",
         note: "Fully funded",
       },
+      now: new Date("2026-07-03T00:00:00.000Z"),
     });
 
     expect(allocated.response).toContain("Budget allocation saved");
+
+    const [allocation] = await db
+      .select()
+      .from(budgetAllocations)
+      .where(eq(budgetAllocations.budgetId, budget.id))
+      .limit(1);
+
+    expect(allocation?.occurredAt.toISOString()).toBe(
+      "2026-07-03T00:00:00.000Z",
+    );
 
     const [paidBudget] = await db
       .select()

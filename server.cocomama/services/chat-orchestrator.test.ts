@@ -348,7 +348,7 @@ describe("chat orchestrator", () => {
           },
         },
       }),
-      now: () => new Date("2026-07-20T00:00:00.000Z"),
+      now: () => new Date("2026-07-20T10:15:30.000Z"),
     });
 
     const response = await orchestrator.handleChat({
@@ -362,7 +362,7 @@ describe("chat orchestrator", () => {
     expect(response.data?.toolCalls?.[0]?.result).toMatchObject({
       description: "Groceries",
       amountMinor: 420000,
-      occurredAt: "2026-07-20",
+      occurredAt: "2026-07-20T10:15:30.000Z",
     });
   });
 

@@ -6,6 +6,7 @@ import type { TransactionType } from "../tools/types.js";
 export type DefaultCategorySeed = {
   kind: TransactionType;
   name: string;
+  emoji: string;
   keywords: string[];
 };
 
@@ -26,6 +27,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "expense",
     name: "Housing",
+    emoji: "🏠",
     keywords: [
       "Rent",
       "Mortgage",
@@ -56,6 +58,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "expense",
     name: "Utilities",
+    emoji: "💡",
     keywords: [
       "Electricity",
       "Water bill",
@@ -77,6 +80,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "expense",
     name: "Food & Dining",
+    emoji: "🍽️",
     keywords: [
       "Groceries",
       "Supermarket",
@@ -104,6 +108,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "expense",
     name: "Transportation",
+    emoji: "🚗",
     keywords: [
       "Fuel",
       "Gasoline",
@@ -134,6 +139,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "expense",
     name: "Healthcare",
+    emoji: "🏥",
     keywords: [
       "Doctor",
       "Hospital",
@@ -159,6 +165,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "expense",
     name: "Shopping",
+    emoji: "🛍️",
     keywords: [
       "Clothing",
       "Shoes",
@@ -186,6 +193,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "expense",
     name: "Entertainment",
+    emoji: "🎬",
     keywords: [
       "Netflix",
       "Disney+",
@@ -211,6 +219,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "expense",
     name: "Travel",
+    emoji: "✈️",
     keywords: [
       "Flights",
       "Hotels",
@@ -233,6 +242,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "expense",
     name: "Education",
+    emoji: "🎓",
     keywords: [
       "Tuition",
       "School fees",
@@ -254,6 +264,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "expense",
     name: "Financial",
+    emoji: "🏦",
     keywords: [
       "Bank fees",
       "ATM fees",
@@ -274,6 +285,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "expense",
     name: "Personal Care",
+    emoji: "💆",
     keywords: [
       "Haircut",
       "Salon",
@@ -294,6 +306,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "expense",
     name: "Family & Pets",
+    emoji: "👪",
     keywords: [
       "Childcare",
       "Daycare",
@@ -314,6 +327,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "expense",
     name: "Insurance",
+    emoji: "🛡️",
     keywords: [
       "Health insurance",
       "Auto insurance",
@@ -329,11 +343,13 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "expense",
     name: "Business & Work",
+    emoji: "💼",
     keywords: ["Office supplies", "Printer ink", "Software subscription"],
   },
   {
     kind: "income",
     name: "Salary & Employment",
+    emoji: "💵",
     keywords: [
       "Salary",
       "Wages",
@@ -357,6 +373,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Freelance & Contract Work",
+    emoji: "🧑‍💻",
     keywords: [
       "Freelance Income",
       "Consulting",
@@ -372,6 +389,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Business Income",
+    emoji: "🏪",
     keywords: [
       "Business Revenue",
       "Sales Revenue",
@@ -387,6 +405,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Gig Economy",
+    emoji: "🚲",
     keywords: [
       "Uber Driver",
       "Lyft Driver",
@@ -405,6 +424,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Online Sales",
+    emoji: "🛒",
     keywords: [
       "Amazon Seller",
       "Etsy Sales",
@@ -421,6 +441,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Rental Income",
+    emoji: "🏘️",
     keywords: [
       "House Rent",
       "Apartment Rent",
@@ -437,6 +458,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Investment Income",
+    emoji: "📈",
     keywords: [
       "Dividends",
       "Interest Income",
@@ -453,6 +475,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Cryptocurrency",
+    emoji: "🪙",
     keywords: [
       "Crypto Trading Profit",
       "Mining Rewards",
@@ -468,6 +491,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Royalties & Licensing",
+    emoji: "🎼",
     keywords: [
       "Book Royalties",
       "Music Royalties",
@@ -481,6 +505,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Content Creator Income",
+    emoji: "🎥",
     keywords: [
       "YouTube Revenue",
       "Google AdSense",
@@ -497,6 +522,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Bank Rewards & Cashback",
+    emoji: "💳",
     keywords: [
       "Cashback Rewards",
       "Credit Card Cashback",
@@ -511,6 +537,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Refunds & Reimbursements",
+    emoji: "🔁",
     keywords: [
       "Tax Refund",
       "Employer Reimbursement",
@@ -527,6 +554,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Government Benefits",
+    emoji: "🏛️",
     keywords: [
       "Social Security",
       "Pension",
@@ -544,6 +572,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Insurance Payouts",
+    emoji: "🛡️",
     keywords: [
       "Health Insurance Claim",
       "Auto Insurance Claim",
@@ -556,6 +585,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Education & Grants",
+    emoji: "🎓",
     keywords: [
       "Scholarship",
       "Fellowship",
@@ -569,6 +599,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Gifts & Family Support",
+    emoji: "🎁",
     keywords: [
       "Cash Gift",
       "Birthday Gift",
@@ -584,6 +615,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Transfers Received",
+    emoji: "🔄",
     keywords: [
       "Bank Transfer",
       "Wire Transfer",
@@ -600,6 +632,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Agriculture & Farming",
+    emoji: "🚜",
     keywords: [
       "Crop Sales",
       "Livestock Sales",
@@ -613,6 +646,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Prizes & Winnings",
+    emoji: "🏆",
     keywords: [
       "Lottery Winnings",
       "Casino Winnings",
@@ -626,6 +660,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Asset Sales",
+    emoji: "🏷️",
     keywords: [
       "Vehicle Sale",
       "Property Sale",
@@ -640,6 +675,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Legal & Settlements",
+    emoji: "⚖️",
     keywords: [
       "Court Settlement",
       "Legal Compensation",
@@ -651,6 +687,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Foreign Income",
+    emoji: "🌍",
     keywords: [
       "Overseas Salary",
       "Foreign Pension",
@@ -662,6 +699,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "income",
     name: "Miscellaneous Income",
+    emoji: "💰",
     keywords: [
       "Cash Deposit",
       "Check Deposit",
@@ -675,6 +713,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Emergency Fund",
+    emoji: "🚨",
     keywords: [
       "Emergency savings",
       "Rainy day fund",
@@ -685,6 +724,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "General Savings",
+    emoji: "🐷",
     keywords: [
       "Savings account",
       "Cash savings",
@@ -695,6 +735,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Retirement Savings",
+    emoji: "🌅",
     keywords: [
       "401(k)",
       "IRA",
@@ -707,6 +748,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Investment Savings",
+    emoji: "📊",
     keywords: [
       "Brokerage account",
       "Stocks",
@@ -720,6 +762,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Education Savings",
+    emoji: "🎓",
     keywords: [
       "College fund",
       "Tuition savings",
@@ -731,6 +774,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Home Savings",
+    emoji: "🏡",
     keywords: [
       "Down payment",
       "Home purchase fund",
@@ -741,6 +785,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Vehicle Savings",
+    emoji: "🚙",
     keywords: [
       "Car purchase fund",
       "Motorcycle fund",
@@ -751,6 +796,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Travel Savings",
+    emoji: "🧳",
     keywords: [
       "Vacation fund",
       "Holiday fund",
@@ -762,6 +808,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Healthcare Savings",
+    emoji: "🩺",
     keywords: [
       "Medical fund",
       "Health Savings Account (HSA)",
@@ -773,6 +820,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Wedding Savings",
+    emoji: "💍",
     keywords: [
       "Wedding fund",
       "Engagement savings",
@@ -783,6 +831,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Baby & Family Savings",
+    emoji: "🍼",
     keywords: [
       "Baby fund",
       "Child education fund",
@@ -793,6 +842,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Business Savings",
+    emoji: "🏢",
     keywords: [
       "Business reserve",
       "Startup fund",
@@ -804,6 +854,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Technology Savings",
+    emoji: "💻",
     keywords: [
       "Laptop fund",
       "Phone upgrade",
@@ -814,6 +865,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Gift Savings",
+    emoji: "🎁",
     keywords: [
       "Christmas fund",
       "Birthday fund",
@@ -824,6 +876,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Tax Savings",
+    emoji: "🧾",
     keywords: [
       "Tax reserve",
       "Quarterly tax savings",
@@ -834,6 +887,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Insurance Reserve",
+    emoji: "🛡️",
     keywords: [
       "Insurance deductible fund",
       "Premium reserve",
@@ -843,6 +897,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Debt Payoff Fund",
+    emoji: "✅",
     keywords: [
       "Loan payoff savings",
       "Mortgage payoff",
@@ -853,6 +908,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Large Purchase Fund",
+    emoji: "🛋️",
     keywords: [
       "Furniture fund",
       "Appliance fund",
@@ -863,16 +919,19 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Pet Savings",
+    emoji: "🐾",
     keywords: ["Veterinary fund", "Pet emergency fund", "Pet adoption savings"],
   },
   {
     kind: "savings",
     name: "Charity Savings",
+    emoji: "🤝",
     keywords: ["Donation fund", "Tithing", "Community support fund"],
   },
   {
     kind: "savings",
     name: "Crypto Savings",
+    emoji: "🪙",
     keywords: [
       "Bitcoin savings",
       "Ethereum savings",
@@ -883,6 +942,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Gold & Precious Metals",
+    emoji: "🥇",
     keywords: [
       "Gold savings",
       "Silver savings",
@@ -893,6 +953,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Foreign Currency Savings",
+    emoji: "💱",
     keywords: [
       "USD reserve",
       "EUR savings",
@@ -903,6 +964,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Children's Future",
+    emoji: "🧒",
     keywords: [
       "College fund",
       "Trust fund",
@@ -913,6 +975,7 @@ export const defaultCategorySeeds: DefaultCategorySeed[] = [
   {
     kind: "savings",
     name: "Other Goal-Based Savings",
+    emoji: "🎯",
     keywords: [
       "New business fund",
       "Dream project fund",
@@ -984,6 +1047,7 @@ export const seedDefaultCategories = async () => {
         .update(categories)
         .set({
           name: seed.name,
+          emoji: seed.emoji,
           keywords: mergeKeywords(existingCategory.keywords, keywords),
         })
         .where(eq(categories.id, existingCategory.id));
@@ -994,6 +1058,7 @@ export const seedDefaultCategories = async () => {
       userId: null,
       kind: seed.kind,
       name: seed.name,
+      emoji: seed.emoji,
       keywords,
     });
   }
