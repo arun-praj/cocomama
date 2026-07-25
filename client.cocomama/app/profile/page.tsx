@@ -8,6 +8,7 @@ import {
   CircleDollarSign,
   Globe2,
   LoaderCircle,
+  LogOut,
   Menu,
   Pencil,
   Save,
@@ -16,6 +17,7 @@ import {
 import { type FormEvent, useEffect, useState } from "react";
 import worldCountries from "world-countries";
 import { z } from "zod";
+import { authClient } from "../../lib/auth-client";
 import { AppSideNavigation } from "../components/app-side-navigation";
 import { ProfileAvatar } from "../components/profile-avatar";
 
@@ -382,8 +384,10 @@ export default function ProfilePage() {
   const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false);
   const [isLocalePickerOpen, setIsLocalePickerOpen] = useState(false);
   const [isSavingLocale, setIsSavingLocale] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [categoryError, setCategoryError] = useState("");
   const [localeError, setLocaleError] = useState("");
+  const [logoutError, setLogoutError] = useState("");
   const [pageError, setPageError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [categoryMessage, setCategoryMessage] = useState("");
@@ -660,6 +664,27 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleLogout() {
+    setIsSigningOut(true);
+    setLogoutError("");
+    setPageError("");
+
+    try {
+      const { error } = await authClient.signOut();
+
+      if (error) {
+        throw new Error(error.code ?? error.message ?? "Could not sign out.");
+      }
+
+      window.location.assign("/login");
+    } catch (error) {
+      setIsSigningOut(false);
+      setLogoutError(
+        error instanceof Error ? error.message : "Could not sign out.",
+      );
+    }
+  }
+
   return (
     <main className="h-dvh overflow-hidden bg-background text-text">
       <div className="flex h-full min-h-0 w-full">
@@ -811,6 +836,67 @@ export default function ProfilePage() {
                       </motion.div>
                     ) : null}
                   </AnimatePresence>
+
+                  <motion.section
+                    className="rounded-2xl border border-red-100 bg-[#fff7f7] p-2 shadow-sm ring-1 ring-white/70"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      delay: 0.05,
+                      duration: 0.22,
+                      ease: "easeOut",
+                    }}
+                  >
+                    <button
+                      className="flex w-full min-w-0 items-center justify-between gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-white/70 disabled:cursor-not-allowed disabled:opacity-60"
+                      type="button"
+                      onClick={() => void handleLogout()}
+                      disabled={isSigningOut}
+                    >
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-red-50 text-danger ring-1 ring-red-100">
+                          {isSigningOut ? (
+                            <LoaderCircle
+                              className="size-4 animate-spin"
+                              strokeWidth={1.9}
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <LogOut
+                              className="size-4"
+                              strokeWidth={1.9}
+                              aria-hidden="true"
+                            />
+                          )}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-sm font-semibold text-text">
+                            Sign out
+                          </span>
+                          <span className="mt-0.5 block truncate text-xs text-text-soft">
+                            End this session and return to login.
+                          </span>
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-xs font-semibold text-danger">
+                        {isSigningOut ? "Signing out" : "Logout"}
+                      </span>
+                    </button>
+                    <AnimatePresence>
+                      {logoutError ? (
+                        <motion.p
+                          className="px-3 pb-2 text-sm font-medium text-danger"
+                          role="alert"
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.16, ease: "easeOut" }}
+                        >
+                          {logoutError}
+                        </motion.p>
+                      ) : null}
+                    </AnimatePresence>
+                  </motion.section>
 
                   <motion.section
                     className="rounded-xl border border-border bg-surface p-4 shadow-sm sm:p-5"
