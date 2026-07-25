@@ -8,11 +8,26 @@ export interface AuthEmailMessage {
   html: string;
 }
 
-const transporter = env.SMTP_HOST
+const gmailSmtpConfig = {
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+};
+
+const smtpConfig =
+  env.SMTP_PROVIDER === "gmail"
+    ? gmailSmtpConfig
+    : env.SMTP_HOST
+      ? {
+          host: env.SMTP_HOST,
+          port: env.SMTP_PORT,
+          secure: env.SMTP_SECURE,
+        }
+      : null;
+
+const transporter = smtpConfig
   ? nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_SECURE,
+      ...smtpConfig,
       auth:
         env.SMTP_USER && env.SMTP_PASS
           ? {
@@ -40,6 +55,10 @@ export const sendAuthEmail = async (message: AuthEmailMessage) => {
 
   if (!transporter) {
     throw new Error("SMTP is not configured for authentication email delivery");
+  }
+
+  if (env.SMTP_PROVIDER === "gmail" && (!env.SMTP_USER || !env.SMTP_PASS)) {
+    throw new Error("Gmail SMTP requires SMTP_USER and SMTP_PASS");
   }
 
   await transporter.sendMail({

@@ -51,8 +51,15 @@ const envSchema = z.object({
       .regex(/^\d{6}$/)
       .default("111111"),
   ),
+  SMTP_PROVIDER: z.preprocess(
+    emptyStringToUndefined,
+    z.enum(["custom", "gmail"]).default("custom"),
+  ),
   SMTP_HOST: z.preprocess(emptyStringToUndefined, z.string().optional()),
-  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_PORT: z.preprocess(
+    emptyStringToUndefined,
+    z.coerce.number().int().positive().default(587),
+  ),
   SMTP_SECURE: z.preprocess(booleanFromEnv, z.boolean().default(false)),
   SMTP_USER: z.preprocess(emptyStringToUndefined, z.string().optional()),
   SMTP_PASS: z.preprocess(emptyStringToUndefined, z.string().optional()),

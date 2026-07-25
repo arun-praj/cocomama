@@ -473,9 +473,9 @@ export default function LoginPage() {
           </p>
         </section>
 
-        <section className="flex min-h-dvh items-center justify-center py-8 lg:min-h-0">
+        <section className="flex min-h-dvh min-w-0 items-center justify-center py-8 lg:min-h-0">
           <motion.div
-            className="w-full max-w-md"
+            className="w-full min-w-0 max-w-md"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
@@ -495,7 +495,7 @@ export default function LoginPage() {
               </span>
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-border bg-surface p-5 shadow-[0_10px_28px_rgba(15,23,42,0.045)] sm:p-6">
+            <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-surface p-5 shadow-[0_10px_28px_rgba(15,23,42,0.045)] sm:p-6">
               <div className="mb-5">
                 <div className="mb-4 grid size-10 place-items-center rounded-lg bg-text text-surface">
                   <ShieldCheck
@@ -516,10 +516,10 @@ export default function LoginPage() {
                 {isOtpStep ? (
                   <motion.div
                     key="otp-step"
-                    className="grid gap-5"
-                    initial={{ opacity: 0, x: 24 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -24 }}
+                    className="grid min-w-0 gap-5"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.22, ease: "easeOut" }}
                   >
                     <button
@@ -538,7 +538,7 @@ export default function LoginPage() {
 
                     <form
                       ref={otpFormRef}
-                      className="grid gap-4"
+                      className="grid min-w-0 gap-4"
                       onSubmit={handleVerifyOtp}
                       noValidate
                     >
@@ -560,7 +560,7 @@ export default function LoginPage() {
                         <input
                           ref={otpInputRef}
                           id="otp"
-                          className="min-h-11 rounded-lg border border-border bg-background px-3 py-2 text-center text-xl tracking-[0.35em] text-text outline-none transition placeholder:text-text-soft focus:border-primary"
+                          className="min-h-11 w-full min-w-0 rounded-lg border border-border bg-background px-3 py-2 text-center text-xl tracking-[0.35em] text-text outline-none transition placeholder:text-text-soft focus:border-primary"
                           value={otp}
                           onChange={(event) => {
                             const nextOtp = event.target.value
@@ -709,13 +709,14 @@ export default function LoginPage() {
                 ) : (
                   <motion.div
                     key="signin-step"
-                    initial={{ opacity: 0, x: -24 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 24 }}
+                    className="min-w-0"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
                     transition={{ duration: 0.22, ease: "easeOut" }}
                   >
                     <form
-                      className="grid gap-4"
+                      className="grid min-w-0 gap-4"
                       onSubmit={handleRequestAuth}
                       noValidate
                     >
@@ -726,7 +727,7 @@ export default function LoginPage() {
                         Email address
                         <input
                           id="email"
-                          className="min-h-11 rounded-lg border border-border bg-background px-3 py-2 text-base font-normal text-text outline-none transition placeholder:text-text-soft focus:border-primary"
+                          className="min-h-11 w-full min-w-0 rounded-lg border border-border bg-background px-3 py-2 text-base font-normal text-text outline-none transition placeholder:text-text-soft focus:border-primary"
                           value={email}
                           onChange={(event) => {
                             setEmail(event.target.value);

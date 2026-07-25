@@ -1092,7 +1092,7 @@ export default function ProfilePage() {
         ) : null}
         {isLocalePickerOpen ? (
           <motion.div
-            className="fixed inset-0 z-50 grid place-items-start bg-black/20 p-0 sm:p-4"
+            className="fixed inset-0 z-50 grid place-items-end bg-black/20 p-0 sm:place-items-center sm:p-4"
             role="dialog"
             aria-modal="true"
             aria-labelledby="locale-picker-title"
@@ -1109,13 +1109,17 @@ export default function ProfilePage() {
               disabled={isSavingLocale}
             />
             <motion.form
-              className="relative box-border max-h-[92dvh] w-full max-w-full overflow-x-hidden overflow-y-auto rounded-b-4xl border border-white/70 bg-[#f5f5f7]/95 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:mx-auto sm:max-w-lg sm:rounded-4xl sm:p-5"
+              className="relative box-border max-h-[92dvh] w-full max-w-full overflow-x-hidden overflow-y-auto rounded-t-4xl border border-white/70 bg-[#f5f5f7]/95 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:mx-auto sm:max-w-lg sm:rounded-4xl sm:p-5"
               onSubmit={handleLocaleSubmit}
-              initial={{ y: -28, opacity: 0.96 }}
+              initial={{ y: 28, opacity: 0.96 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -24, opacity: 0 }}
+              exit={{ y: 24, opacity: 0 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
             >
+              <div
+                className="mx-auto mb-4 h-1 w-10 rounded-full bg-black/15 sm:hidden"
+                aria-hidden="true"
+              />
               <div className="flex min-w-0 items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h2
