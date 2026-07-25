@@ -303,20 +303,6 @@ function SearchableSelect({
   );
 }
 
-function getRedirectPath() {
-  const nextPath = new URLSearchParams(window.location.search).get("next");
-
-  if (
-    nextPath?.startsWith("/") &&
-    !nextPath.startsWith("//") &&
-    nextPath !== "/"
-  ) {
-    return nextPath;
-  }
-
-  return "/home";
-}
-
 export default function OnboardingPage() {
   const [displayName, setDisplayName] = useState("");
   const [country, setCountry] = useState("US");
@@ -425,12 +411,7 @@ export default function OnboardingPage() {
         throw new Error("Could not save onboarding. Please try again.");
       }
 
-      const nextPath = getRedirectPath();
       const welcomeUrl = new URL("/welcome", window.location.origin);
-
-      if (nextPath !== "/home") {
-        welcomeUrl.searchParams.set("next", nextPath);
-      }
 
       window.location.assign(welcomeUrl.toString());
     } catch (submitError) {
