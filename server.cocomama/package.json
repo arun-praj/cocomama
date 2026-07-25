@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "smoke:real-user": "tsx scripts/smoke-real-user.ts",
+    "db:create": "tsx scripts/create-database.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed:categories": "tsx scripts/seed-default-categories.ts"
